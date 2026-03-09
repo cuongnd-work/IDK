@@ -15,7 +15,7 @@
 
     static TRACKING = {
         PROJECT_ID: "Game05",
-        PLAYABLE_ID: "PA0002"
+        PLAYABLE_ID: "PA0003"
     }
 
     static EFFECT_NAME = {

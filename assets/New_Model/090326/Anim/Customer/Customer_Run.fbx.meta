@@ -2,14 +2,14 @@
   "ver": "2.3.14",
   "importer": "fbx",
   "imported": true,
-  "uuid": "9cc0db61-3981-441f-b3f6-ad172574af47",
+  "uuid": "f4888921-e4c4-4395-a1c5-c24c2944f10e",
   "files": [
     "__original-animation-0.bin"
   ],
   "subMetas": {
     "73b7f": {
       "importer": "gltf-animation",
-      "uuid": "9cc0db61-3981-441f-b3f6-ad172574af47@73b7f",
+      "uuid": "f4888921-e4c4-4395-a1c5-c24c2944f10e@73b7f",
       "displayName": "",
       "id": "73b7f",
       "name": "Take 001.animation",
@@ -19,7 +19,7 @@
         "sample": 30,
         "span": {
           "from": 0,
-          "to": 1.600000023841858
+          "to": 0.5333333611488342
         },
         "events": []
       },
@@ -30,12 +30,12 @@
       ],
       "subMetas": {}
     },
-    "228e9": {
+    "f995d": {
       "importer": "gltf-scene",
-      "uuid": "9cc0db61-3981-441f-b3f6-ad172574af47@228e9",
+      "uuid": "f4888921-e4c4-4395-a1c5-c24c2944f10e@f995d",
       "displayName": "",
-      "id": "228e9",
-      "name": "Craft_Tailoring.prefab",
+      "id": "f995d",
+      "name": "Customer_Run.prefab",
       "userData": {
         "gltfIndex": 0
       },
@@ -55,13 +55,13 @@
     "animationImportSettings": [
       {
         "name": "Take 001",
-        "duration": 1.600000023841858,
+        "duration": 0.5333333611488342,
         "fps": 30,
         "splits": [
           {
             "name": "Take 001",
             "from": 0,
-            "to": 1.600000023841858,
+            "to": 0.5333333611488342,
             "wrapMode": 2,
             "previousId": "73b7f"
           }
@@ -92,7 +92,7 @@
       "textures": [],
       "materials": [],
       "scenes": [
-        "9cc0db61-3981-441f-b3f6-ad172574af47@228e9"
+        "f4888921-e4c4-4395-a1c5-c24c2944f10e@f995d"
       ]
     }
   }

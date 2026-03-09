@@ -2,38 +2,18 @@
   "ver": "2.3.14",
   "importer": "fbx",
   "imported": true,
-  "uuid": "2663d549-8087-4ee5-bd96-f3a54d4bb89d",
+  "uuid": "dd9f2a8e-3cd4-471b-a2a9-3966df5e61a7",
   "files": [],
   "subMetas": {
-    "48b02": {
-      "importer": "gltf-embeded-image",
-      "uuid": "2663d549-8087-4ee5-bd96-f3a54d4bb89d@48b02",
-      "displayName": "",
-      "id": "48b02",
-      "name": "base_color_texture.image",
-      "userData": {
-        "gltfIndex": 0,
-        "fixAlphaTransparencyArtifacts": true,
-        "hasAlpha": true,
-        "type": "texture"
-      },
-      "ver": "1.0.3",
-      "imported": true,
-      "files": [
-        ".json",
-        ".png"
-      ],
-      "subMetas": {}
-    },
-    "651a7": {
+    "4846b": {
       "importer": "gltf-mesh",
-      "uuid": "2663d549-8087-4ee5-bd96-f3a54d4bb89d@651a7",
+      "uuid": "dd9f2a8e-3cd4-471b-a2a9-3966df5e61a7@4846b",
       "displayName": "",
-      "id": "651a7",
-      "name": "K11.001.mesh",
+      "id": "4846b",
+      "name": "w_20000.mesh",
       "userData": {
         "gltfIndex": 0,
-        "triangleCount": 656
+        "triangleCount": 436
       },
       "ver": "1.1.1",
       "imported": true,
@@ -45,7 +25,7 @@
     },
     "7d6ab": {
       "importer": "texture",
-      "uuid": "2663d549-8087-4ee5-bd96-f3a54d4bb89d@7d6ab",
+      "uuid": "dd9f2a8e-3cd4-471b-a2a9-3966df5e61a7@7d6ab",
       "displayName": "",
       "id": "7d6ab",
       "name": "base_color_texture.texture",
@@ -57,7 +37,7 @@
         "mipfilter": "none",
         "anisotropy": 0,
         "isUuid": false,
-        "imageUuidOrDatabaseUri": "db://assets/3D/textures/KitchenGradient.png"
+        "imageUuidOrDatabaseUri": "db://assets/New_Model/090326/halloweenbits_texture.png"
       },
       "ver": "1.0.22",
       "imported": true,
@@ -66,12 +46,12 @@
       ],
       "subMetas": {}
     },
-    "ce83f": {
+    "7c1e7": {
       "importer": "gltf-material",
-      "uuid": "2663d549-8087-4ee5-bd96-f3a54d4bb89d@ce83f",
+      "uuid": "dd9f2a8e-3cd4-471b-a2a9-3966df5e61a7@7c1e7",
       "displayName": "",
-      "id": "ce83f",
-      "name": "KichenGradiant.material",
+      "id": "7c1e7",
+      "name": "Workbench.material",
       "userData": {
         "gltfIndex": 0
       },
@@ -82,12 +62,12 @@
       ],
       "subMetas": {}
     },
-    "69f24": {
+    "766bf": {
       "importer": "gltf-scene",
-      "uuid": "2663d549-8087-4ee5-bd96-f3a54d4bb89d@69f24",
+      "uuid": "dd9f2a8e-3cd4-471b-a2a9-3966df5e61a7@766bf",
       "displayName": "",
-      "id": "69f24",
-      "name": "K34.prefab",
+      "id": "766bf",
+      "name": "Character_Weapon.prefab",
       "userData": {
         "gltfIndex": 0
       },
@@ -103,7 +83,7 @@
     "imageMetas": [
       {
         "name": "base_color_texture",
-        "uri": "db://assets/3D/textures/KitchenGradient.png"
+        "uri": "db://assets/New_Model/090326/halloweenbits_texture.png"
       }
     ],
     "fbx": {
@@ -129,18 +109,54 @@
     },
     "assetFinder": {
       "meshes": [
-        "2663d549-8087-4ee5-bd96-f3a54d4bb89d@651a7"
+        "dd9f2a8e-3cd4-471b-a2a9-3966df5e61a7@4846b"
       ],
       "skeletons": [],
       "textures": [
-        "2663d549-8087-4ee5-bd96-f3a54d4bb89d@7d6ab"
+        "dd9f2a8e-3cd4-471b-a2a9-3966df5e61a7@7d6ab"
       ],
       "materials": [
-        "2663d549-8087-4ee5-bd96-f3a54d4bb89d@ce83f"
+        "dd9f2a8e-3cd4-471b-a2a9-3966df5e61a7@7c1e7"
       ],
       "scenes": [
-        "2663d549-8087-4ee5-bd96-f3a54d4bb89d@69f24"
+        "dd9f2a8e-3cd4-471b-a2a9-3966df5e61a7@766bf"
       ]
+    },
+    "materials": {
+      "dd9f2a8e-3cd4-471b-a2a9-3966df5e61a7@7c1e7": {
+        "__type__": "cc.Material",
+        "_name": "",
+        "_objFlags": 0,
+        "__editorExtras__": {},
+        "_native": "",
+        "_effectAsset": {
+          "__uuid__": "431e5f0f-0343-40bf-88d4-e4468eb58d94",
+          "__expectedType__": "cc.EffectAsset"
+        },
+        "_techIdx": 0,
+        "_defines": [
+          {}
+        ],
+        "_states": [
+          {
+            "rasterizerState": {},
+            "depthStencilState": {},
+            "blendState": {
+              "targets": [
+                {}
+              ]
+            }
+          }
+        ],
+        "_props": [
+          {
+            "albedoMap": {
+              "__uuid__": "e31ad997-cebc-456a-9625-3c8b8503a247@6c48a",
+              "__expectedType__": "cc.Texture2D"
+            }
+          }
+        ]
+      }
     }
   }
 }

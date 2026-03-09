@@ -2,14 +2,14 @@
   "ver": "2.3.14",
   "importer": "fbx",
   "imported": true,
-  "uuid": "5b0a294e-ef4c-41be-8247-b1f09f9aa347",
+  "uuid": "de799032-3a44-45a5-9936-e98b29b3eacd",
   "files": [
     "__original-animation-0.bin"
   ],
   "subMetas": {
     "73b7f": {
       "importer": "gltf-animation",
-      "uuid": "5b0a294e-ef4c-41be-8247-b1f09f9aa347@73b7f",
+      "uuid": "de799032-3a44-45a5-9936-e98b29b3eacd@73b7f",
       "displayName": "",
       "id": "73b7f",
       "name": "Take 001.animation",
@@ -32,7 +32,7 @@
     },
     "743c5": {
       "importer": "gltf-scene",
-      "uuid": "5b0a294e-ef4c-41be-8247-b1f09f9aa347@743c5",
+      "uuid": "de799032-3a44-45a5-9936-e98b29b3eacd@743c5",
       "displayName": "",
       "id": "743c5",
       "name": "Craft_Forging.prefab",
@@ -92,7 +92,7 @@
       "textures": [],
       "materials": [],
       "scenes": [
-        "5b0a294e-ef4c-41be-8247-b1f09f9aa347@743c5"
+        "de799032-3a44-45a5-9936-e98b29b3eacd@743c5"
       ]
     }
   }

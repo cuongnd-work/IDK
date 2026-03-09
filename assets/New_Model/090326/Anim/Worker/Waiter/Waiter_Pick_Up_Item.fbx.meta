@@ -2,14 +2,14 @@
   "ver": "2.3.14",
   "importer": "fbx",
   "imported": true,
-  "uuid": "40d6731b-32e5-44ca-ae74-6ee0da6da3c4",
+  "uuid": "26d779be-ab14-4747-9f49-6dcad584fe5a",
   "files": [
     "__original-animation-0.bin"
   ],
   "subMetas": {
     "73b7f": {
       "importer": "gltf-animation",
-      "uuid": "40d6731b-32e5-44ca-ae74-6ee0da6da3c4@73b7f",
+      "uuid": "26d779be-ab14-4747-9f49-6dcad584fe5a@73b7f",
       "displayName": "",
       "id": "73b7f",
       "name": "Take 001.animation",
@@ -19,7 +19,7 @@
         "sample": 30,
         "span": {
           "from": 0,
-          "to": 1.600000023841858
+          "to": 0.800000011920929
         },
         "events": []
       },
@@ -30,12 +30,12 @@
       ],
       "subMetas": {}
     },
-    "60a6b": {
+    "05877": {
       "importer": "gltf-scene",
-      "uuid": "40d6731b-32e5-44ca-ae74-6ee0da6da3c4@60a6b",
+      "uuid": "26d779be-ab14-4747-9f49-6dcad584fe5a@05877",
       "displayName": "",
-      "id": "60a6b",
-      "name": "Craft_Carpentry.prefab",
+      "id": "05877",
+      "name": "Waiter_Pick_Up_Item.prefab",
       "userData": {
         "gltfIndex": 0
       },
@@ -55,13 +55,13 @@
     "animationImportSettings": [
       {
         "name": "Take 001",
-        "duration": 1.600000023841858,
+        "duration": 0.800000011920929,
         "fps": 30,
         "splits": [
           {
             "name": "Take 001",
             "from": 0,
-            "to": 1.600000023841858,
+            "to": 0.800000011920929,
             "wrapMode": 2,
             "previousId": "73b7f"
           }
@@ -92,7 +92,7 @@
       "textures": [],
       "materials": [],
       "scenes": [
-        "40d6731b-32e5-44ca-ae74-6ee0da6da3c4@60a6b"
+        "26d779be-ab14-4747-9f49-6dcad584fe5a@05877"
       ]
     }
   }

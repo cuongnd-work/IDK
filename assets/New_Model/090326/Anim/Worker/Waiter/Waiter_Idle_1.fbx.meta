@@ -2,14 +2,14 @@
   "ver": "2.3.14",
   "importer": "fbx",
   "imported": true,
-  "uuid": "cd7cdb36-ca5e-4867-8dc2-d4b6fcf29c52",
+  "uuid": "7c1066eb-b749-40b5-9ab0-83f9112a0e63",
   "files": [
     "__original-animation-0.bin"
   ],
   "subMetas": {
     "73b7f": {
       "importer": "gltf-animation",
-      "uuid": "cd7cdb36-ca5e-4867-8dc2-d4b6fcf29c52@73b7f",
+      "uuid": "7c1066eb-b749-40b5-9ab0-83f9112a0e63@73b7f",
       "displayName": "",
       "id": "73b7f",
       "name": "Take 001.animation",
@@ -30,12 +30,12 @@
       ],
       "subMetas": {}
     },
-    "e6f20": {
+    "5ba0b": {
       "importer": "gltf-scene",
-      "uuid": "cd7cdb36-ca5e-4867-8dc2-d4b6fcf29c52@e6f20",
+      "uuid": "7c1066eb-b749-40b5-9ab0-83f9112a0e63@5ba0b",
       "displayName": "",
-      "id": "e6f20",
-      "name": "Craft_Imblue_Magic.prefab",
+      "id": "5ba0b",
+      "name": "Waiter_Idle_1.prefab",
       "userData": {
         "gltfIndex": 0
       },
@@ -92,7 +92,7 @@
       "textures": [],
       "materials": [],
       "scenes": [
-        "cd7cdb36-ca5e-4867-8dc2-d4b6fcf29c52@e6f20"
+        "7c1066eb-b749-40b5-9ab0-83f9112a0e63@5ba0b"
       ]
     }
   }

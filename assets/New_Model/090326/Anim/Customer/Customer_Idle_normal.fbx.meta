@@ -2,14 +2,14 @@
   "ver": "2.3.14",
   "importer": "fbx",
   "imported": true,
-  "uuid": "2379fbf9-9dd8-4e79-89f5-bfe9a5373c0f",
+  "uuid": "e1347ffa-9478-4a5a-b400-fdb72856e7b8",
   "files": [
     "__original-animation-0.bin"
   ],
   "subMetas": {
     "73b7f": {
       "importer": "gltf-animation",
-      "uuid": "2379fbf9-9dd8-4e79-89f5-bfe9a5373c0f@73b7f",
+      "uuid": "e1347ffa-9478-4a5a-b400-fdb72856e7b8@73b7f",
       "displayName": "",
       "id": "73b7f",
       "name": "Take 001.animation",
@@ -30,12 +30,12 @@
       ],
       "subMetas": {}
     },
-    "a7c0e": {
+    "c402a": {
       "importer": "gltf-scene",
-      "uuid": "2379fbf9-9dd8-4e79-89f5-bfe9a5373c0f@a7c0e",
+      "uuid": "e1347ffa-9478-4a5a-b400-fdb72856e7b8@c402a",
       "displayName": "",
-      "id": "a7c0e",
-      "name": "Craft_LeatherWorking.prefab",
+      "id": "c402a",
+      "name": "Customer_Idle_normal.prefab",
       "userData": {
         "gltfIndex": 0
       },
@@ -92,7 +92,7 @@
       "textures": [],
       "materials": [],
       "scenes": [
-        "2379fbf9-9dd8-4e79-89f5-bfe9a5373c0f@a7c0e"
+        "e1347ffa-9478-4a5a-b400-fdb72856e7b8@c402a"
       ]
     }
   }

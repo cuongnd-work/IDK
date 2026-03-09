@@ -7,13 +7,15 @@ import {
     Vec3,
     AudioSource,
     AudioClip,
-    Prefab
+    Prefab,
+    Animation
 } from 'cc';
 import { zoom_button } from "db://assets/scripts/zoom_button";
 import { ChefBehavior } from "./ChefBehavior";
 import super_html_script from "db://assets/plugins/playable-foundation/super-html/super_html_script";
 import {CurrencyView} from "db://assets/scripts/CurrencyView";
 import {object_pool_manager} from "db://assets/plugins/playable-foundation/game-foundation/object_pool";
+import {super_html_playable} from "db://assets/plugins/playable-foundation/super-html/super_html_playable";
 
 const { ccclass, property } = _decorator;
 
@@ -32,11 +34,20 @@ export class TusButton extends Component {
     @property(ChefBehavior)
     public chefBehavior: ChefBehavior = null!;
 
+    @property(ChefBehavior)
+    public chefWorkerBehavior: ChefBehavior = null!;
+
     @property(Node)
     public handTarget: Node = null!;
 
     @property(Node)
+    public handTarget2: Node = null!;
+
+    @property(Node)
     public end: Node = null!;
+
+    @property(Animation)
+    public endAnim: Animation = null!;
 
     @property(Prefab)
     flash: Prefab = null!;
@@ -63,6 +74,19 @@ export class TusButton extends Component {
 
     private _count: number = 0;
 
+    @property({ tooltip: 'Số lần click cần thiết worker' })
+    public countWorkerMax: number = 3;
+
+    private readonly speedCostAmount: number = 100;
+    private readonly workerCostAmount: number = 250;
+
+    private isB1Interact: boolean = true;
+    private isB2Interact: boolean = false;
+
+    private readonly currencyChangeHandler = () => {
+        this.refreshButtonAvailability();
+    };
+
     /* ================= LIFE ================= */
 
     start () {
@@ -74,19 +98,40 @@ export class TusButton extends Component {
 
         this.setButtonInteractable(this.buttonSpeed, true);
         this.setButtonInteractable(this.buttonWorker, false);
+
+        CurrencyView.onCurrencyChanged(this.currencyChangeHandler, this);
+        this.refreshButtonAvailability();
     }
+
+    public isCompleted: boolean = false;
 
     /* ================= CLICK ================= */
 
     public ButtonSpeedClicker (): void {
-        if(!CurrencyView.instance.trySubtractCurrency(100)) return;
+        if(this.isCompleted) return;
+
+        if(!CurrencyView.instance.trySubtractCurrency(this.speedCostAmount)) return;
 
         this.playClickSound();
         object_pool_manager.instance.Spawn(this.flash, new Vec3(0,0,0), null, this.flashParent);
 
         this._count++;
 
-        this.chefBehavior.currentSpeed += 2.5;
+        if(this.isWorkerActive)
+        {
+            this.chefWorkerBehavior.currentSpeed += 3;
+
+            if (this._count >= this.countMax + this.countWorkerMax)
+            {
+                this.endAnim?.play();
+                this.isCompleted = true;
+                // this.end.active = true;
+            }
+
+            return;
+        }
+
+        this.chefBehavior.currentSpeed += 3;
 
         if (this._count >= this.countMax) {
 
@@ -103,15 +148,32 @@ export class TusButton extends Component {
         }
     }
 
+    private isWorkerActive: boolean = false;
+
+    @property(Node)
+    public worker: Node = null;
+
     public ButtonWorkerClicker (): void {
+        if(!CurrencyView.instance.trySubtractCurrency(this.workerCostAmount)) return;
+
         this.playClickSound();
 
         this.setButtonInteractable(this.buttonSpeed, false);
 
-        super_html_script.on_click_game_end();
-        super_html_script.on_click_download();
+        this.worker.active = true;
 
-        this.end.active = true;
+        this.zoom_button2.stopZoomAndReset();
+        this.zoom_button1.startZoom();
+
+        this.setSpriteAlpha(this.zoom_button2.node, 100);
+        this.setSpriteAlpha(this.zoom_button1.node, 255);
+
+        this.setButtonInteractable(this.buttonSpeed, true);
+        this.setButtonInteractable(this.buttonWorker, false);
+
+        this.hand.position = this.handTarget2.position;
+
+        this.isWorkerActive = true;
     }
 
     /* ================= SOUND ================= */
@@ -133,8 +195,40 @@ export class TusButton extends Component {
         sprite.color = c;
     }
 
-    private setButtonInteractable (btn: Button, enable: boolean) {
+    private refreshButtonAvailability () {
+        const currencyView = CurrencyView.instance;
+        const canAffordSpeed = currencyView ? currencyView.canAfford(this.speedCostAmount) : true;
+        const canAffordWorker = currencyView ? currencyView.canAfford(this.workerCostAmount) : true;
+
+        this.applyButtonState(this.buttonSpeed, this.isB1Interact && canAffordSpeed, canAffordSpeed);
+        this.applyButtonState(this.buttonWorker, this.isB2Interact && canAffordWorker, canAffordWorker);
+    }
+
+    private applyButtonState (btn: Button, enable: boolean, canAfford: boolean) {
         if (!btn) return;
         btn.interactable = enable;
+        if(!enable) {
+            this.setSpriteAlpha(btn.node.parent, 100);
+            return;
+        }
+        this.setSpriteAlpha(btn.node.parent, canAfford ? 255 : 100);
+    }
+
+    private setButtonInteractable (btn: Button, enable: boolean) {
+        if (!btn) return;
+
+        if (btn === this.buttonSpeed) {
+            this.isB1Interact = enable;
+        } else if (btn === this.buttonWorker) {
+            this.isB2Interact = enable;
+        } else {
+            btn.interactable = enable;
+        }
+
+        this.refreshButtonAvailability();
+    }
+
+    onDestroy () {
+        CurrencyView.offCurrencyChanged(this.currencyChangeHandler, this);
     }
 }
