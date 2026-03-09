@@ -26,7 +26,7 @@ export class CatAnimationController extends Component {
     }
 
     public doIdle(){
-        this.animation.play("Dung");
+        this.animation.play("Idle");
     }
 
     public doWalk(){
@@ -42,15 +42,15 @@ export class CatAnimationController extends Component {
         if (CurrencyView.instance) {
             CurrencyView.instance.addCurrency(50);
         }
-        this.animation.play("Walk_Angry");
+        this.animation.play("Run");
     }
 
     public doBedo(){
-        this.animation.play("Bedo");
+        this.animation.play("Run");
     }
 
     public doDoing(){
-        this.animation.play("Doing");
+        this.animation.play("DapBua");
     }
 }
 

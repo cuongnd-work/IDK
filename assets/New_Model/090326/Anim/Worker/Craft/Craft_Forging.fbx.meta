@@ -12,7 +12,7 @@
       "uuid": "de799032-3a44-45a5-9936-e98b29b3eacd@73b7f",
       "displayName": "",
       "id": "73b7f",
-      "name": "Take 001.animation",
+      "name": "DapBua.animation",
       "userData": {
         "gltfIndex": 0,
         "wrapMode": 2,
@@ -59,7 +59,7 @@
         "fps": 30,
         "splits": [
           {
-            "name": "Take 001",
+            "name": "DapBua",
             "from": 0,
             "to": 1.600000023841858,
             "wrapMode": 2,
