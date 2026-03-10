@@ -46,7 +46,7 @@ export class CatAnimationController extends Component {
     }
 
     public doBedo(){
-        this.animation.play("Run");
+        this.animation.play("Bedo");
     }
 
     public doDoing(){
