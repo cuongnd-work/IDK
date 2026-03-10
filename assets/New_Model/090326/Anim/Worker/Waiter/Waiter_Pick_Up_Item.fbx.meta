@@ -12,7 +12,7 @@
       "uuid": "26d779be-ab14-4747-9f49-6dcad584fe5a@73b7f",
       "displayName": "",
       "id": "73b7f",
-      "name": "Take 001.animation",
+      "name": "pickup.animation",
       "userData": {
         "gltfIndex": 0,
         "wrapMode": 2,
@@ -59,7 +59,7 @@
         "fps": 30,
         "splits": [
           {
-            "name": "Take 001",
+            "name": "pickup",
             "from": 0,
             "to": 0.800000011920929,
             "wrapMode": 2,

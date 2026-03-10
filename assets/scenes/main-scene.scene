@@ -12910,6 +12910,10 @@
       {
         "__uuid__": "c2f84d01-7443-44f6-b338-640434b81f4d@73b7f",
         "__expectedType__": "cc.AnimationClip"
+      },
+      {
+        "__uuid__": "26d779be-ab14-4747-9f49-6dcad584fe5a@73b7f",
+        "__expectedType__": "cc.AnimationClip"
       }
     ],
     "_defaultClip": null,
@@ -16324,6 +16328,10 @@
       },
       {
         "__uuid__": "c2f84d01-7443-44f6-b338-640434b81f4d@73b7f",
+        "__expectedType__": "cc.AnimationClip"
+      },
+      {
+        "__uuid__": "26d779be-ab14-4747-9f49-6dcad584fe5a@73b7f",
         "__expectedType__": "cc.AnimationClip"
       }
     ],
