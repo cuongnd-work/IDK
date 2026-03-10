@@ -11694,8 +11694,8 @@
     "pointB": {
       "__id__": 608
     },
-    "speed": 3,
-    "currentSpeed": 3,
+    "speed": 1,
+    "currentSpeed": 1,
     "stopDistance": 0.1,
     "rotationOffsetY": 0,
     "hamburger": {
@@ -15105,8 +15105,8 @@
     "pointB": {
       "__id__": 692
     },
-    "speed": 3,
-    "currentSpeed": 3,
+    "speed": 1,
+    "currentSpeed": 1,
     "stopDistance": 0.1,
     "rotationOffsetY": 0,
     "hamburger": {
