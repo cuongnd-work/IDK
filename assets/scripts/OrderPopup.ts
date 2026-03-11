@@ -1,6 +1,7 @@
 import { _decorator, Component, SpriteRenderer, SpriteFrame, Label, Node, EventHandler } from 'cc';
 import { CustomersQueueEvents } from 'db://assets/scripts/customers/CustomersQueueEvents';
 import { CatAnimationController } from 'db://assets/scripts/CatAnimationController';
+import { WaveFloatMotion } from 'db://assets/scripts/WaveFloatMotion';
 const { ccclass, property } = _decorator;
 
 @ccclass('OrderPopup')
@@ -27,6 +28,21 @@ export class OrderPopup extends Component {
     @property({ type: [EventHandler], tooltip: 'Gọi EventHandler khi mèo hoàn thành order' })
     orderCompletedEvents: EventHandler[] = [];
 
+    @property({ tooltip: 'Enable floating wave motion for this popup.' })
+    public enableWaveFloat: boolean = true;
+
+    @property({ tooltip: 'Leave empty to use this popup node.' })
+    public waveTarget: Node = null;
+
+    @property({ tooltip: 'Wave amplitude along the Y axis.', min: 0 })
+    public waveAmplitude: number = 0.05;
+
+    @property({ tooltip: 'Wave speed (cycles per second).', min: 0 })
+    public waveSpeed: number = 1;
+
+    @property({ tooltip: 'Randomize the phase so each popup floats differently.' })
+    public waveRandomizePhase: boolean = true;
+
     private _remainingCount = 0;
     private countdownOverrideSprite: SpriteFrame | null = null;
     private countdownOverrideActive = false;
@@ -38,7 +54,10 @@ export class OrderPopup extends Component {
         this.resetCount();
         this.refreshSprite();
 
-        if(this.alwaysUseFirst) return;
+        if(this.alwaysUseFirst) {
+            this.setupWaveFloatMotion();
+            return;
+        }
 
         this.parentss.active = false;
 
@@ -50,6 +69,8 @@ export class OrderPopup extends Component {
         setTimeout(() => {
             this.parentss.active = true;
         }, 1500 + randomMs);
+
+        this.setupWaveFloatMotion();
     }
 
     public randomRange(min: number, max: number): number {
@@ -117,6 +138,29 @@ export class OrderPopup extends Component {
             this.text.node.active = true;
             this.refreshCountLabel();
         }
+    }
+
+    private setupWaveFloatMotion (): void {
+        if (!this.enableWaveFloat) {
+            return;
+        }
+
+        const target = this.waveTarget ?? this.node;
+        if (!target) {
+            return;
+        }
+
+        let motion = target.getComponent(WaveFloatMotion);
+        if (!motion) {
+            motion = target.addComponent(WaveFloatMotion);
+        }
+
+        motion.targetNode = target;
+        motion.amplitude = this.waveAmplitude;
+        motion.waveSpeed = this.waveSpeed;
+        motion.randomizePhase = this.waveRandomizePhase;
+        motion.reinitialize(true);
+
     }
 
     private notifyOrderCompleted (): void {
