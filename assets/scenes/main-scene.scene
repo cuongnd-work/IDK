@@ -16845,7 +16845,7 @@
         "__id__": 897
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 899
@@ -21001,14 +21001,18 @@
     "confirmHideNode": {
       "__id__": 917
     },
-    "confirmShowNode": null,
+    "confirmShowNode": {
+      "__id__": 831
+    },
     "secondaryButton": {
       "__id__": 948
     },
     "secondaryHideNode": {
       "__id__": 917
     },
-    "secondaryShowNode": null,
+    "secondaryShowNode": {
+      "__id__": 831
+    },
     "chefTarget": {
       "__id__": 740
     },
@@ -21017,6 +21021,7 @@
         "__id__": 824
       }
     ],
+    "lockChefsUntilConfirm": true,
     "_id": "7dM+EHiY1B67hBYrWHw1+7"
   },
   {
@@ -21672,7 +21677,7 @@
     "target": {
       "__id__": 958
     },
-    "duration": 0.5,
+    "duration": 0.4,
     "playOnEnable": true,
     "startOpacity": 0,
     "endOpacity": 255,
@@ -21777,7 +21782,7 @@
     "node": {
       "__id__": 830
     },
-    "_enabled": true,
+    "_enabled": false,
     "__prefab": null,
     "playOnLoad": true,
     "_clips": [

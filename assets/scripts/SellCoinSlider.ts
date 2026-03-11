@@ -40,10 +40,17 @@ export class SellCoinSlider extends Component {
     @property({ type: [ChefBehavior], tooltip: 'Thêm các chef khác cũng nhận được coin.' })
     public additionalChefTargets: ChefBehavior[] = [];
 
+    @property({ tooltip: 'Giữ ChefBehavior ở trạng thái tắt cho đến khi nhấn nút confirm.' })
+    public lockChefsUntilConfirm: boolean = true;
+
     private currentCoin: number = 50;
+    private chefsUnlocked: boolean = false;
 
     protected onLoad(): void {
         this.ensureValidRange();
+        if (!this.lockChefsUntilConfirm) {
+            this.chefsUnlocked = true;
+        }
     }
 
     protected onEnable(): void {
@@ -128,6 +135,7 @@ export class SellCoinSlider extends Component {
     private handleConfirmClicked(): void {
         this.applyCoinValueToChef();
         this.toggleNodePair(this.confirmHideNode, this.confirmShowNode);
+        this.unlockChefs();
     }
 
     private handleSecondaryClicked(): void {
@@ -175,6 +183,9 @@ export class SellCoinSlider extends Component {
         if (targets.length === 0) {
             return;
         }
+        if (this.lockChefsUntilConfirm && !this.chefsUnlocked) {
+            this.setChefEnabledState(targets, false);
+        }
         for (const chef of targets) {
             chef.setSellCoinReward(this.currentCoin);
         }
@@ -197,6 +208,27 @@ export class SellCoinSlider extends Component {
             }
         }
         return result;
+    }
+
+    private setChefEnabledState(targets: ChefBehavior[], enable: boolean): void {
+        for (const chef of targets) {
+            if (!chef) {
+                continue;
+            }
+            chef.enabled = enable;
+        }
+    }
+
+    private unlockChefs(): void {
+        if (this.chefsUnlocked) {
+            return;
+        }
+        this.chefsUnlocked = true;
+        const targets = this.collectChefTargets();
+        if (targets.length === 0) {
+            return;
+        }
+        this.setChefEnabledState(targets, true);
     }
 
     private ensureValidRange(): void {
