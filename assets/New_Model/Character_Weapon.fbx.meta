@@ -1,0 +1,162 @@
+{
+  "ver": "2.3.14",
+  "importer": "fbx",
+  "imported": true,
+  "uuid": "d39f2a77-bfe2-41d7-a9be-9fa72307489b",
+  "files": [],
+  "subMetas": {
+    "4846b": {
+      "importer": "gltf-mesh",
+      "uuid": "d39f2a77-bfe2-41d7-a9be-9fa72307489b@4846b",
+      "displayName": "",
+      "id": "4846b",
+      "name": "w_20000.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 436
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "7d6ab": {
+      "importer": "texture",
+      "uuid": "d39f2a77-bfe2-41d7-a9be-9fa72307489b@7d6ab",
+      "displayName": "",
+      "id": "7d6ab",
+      "name": "base_color_texture.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": false,
+        "imageUuidOrDatabaseUri": "db://assets/New_Model/texture/halloweenbits_texture.png"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "7c1e7": {
+      "importer": "gltf-material",
+      "uuid": "d39f2a77-bfe2-41d7-a9be-9fa72307489b@7c1e7",
+      "displayName": "",
+      "id": "7c1e7",
+      "name": "Workbench.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "766bf": {
+      "importer": "gltf-scene",
+      "uuid": "d39f2a77-bfe2-41d7-a9be-9fa72307489b@766bf",
+      "displayName": "",
+      "id": "766bf",
+      "name": "Character_Weapon.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "base_color_texture",
+        "uri": "db://assets/New_Model/texture/halloweenbits_texture.png"
+      }
+    ],
+    "fbx": {
+      "smartMaterialEnabled": true
+    },
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "d39f2a77-bfe2-41d7-a9be-9fa72307489b@4846b"
+      ],
+      "skeletons": [],
+      "textures": [
+        "d39f2a77-bfe2-41d7-a9be-9fa72307489b@7d6ab"
+      ],
+      "materials": [
+        "d39f2a77-bfe2-41d7-a9be-9fa72307489b@7c1e7"
+      ],
+      "scenes": [
+        "d39f2a77-bfe2-41d7-a9be-9fa72307489b@766bf"
+      ]
+    },
+    "materials": {
+      "d39f2a77-bfe2-41d7-a9be-9fa72307489b@7c1e7": {
+        "__type__": "cc.Material",
+        "_name": "",
+        "_objFlags": 0,
+        "__editorExtras__": {},
+        "_native": "",
+        "_effectAsset": {
+          "__uuid__": "431e5f0f-0343-40bf-88d4-e4468eb58d94",
+          "__expectedType__": "cc.EffectAsset"
+        },
+        "_techIdx": 0,
+        "_defines": [
+          {}
+        ],
+        "_states": [
+          {
+            "rasterizerState": {},
+            "depthStencilState": {},
+            "blendState": {
+              "targets": [
+                {}
+              ]
+            }
+          }
+        ],
+        "_props": [
+          {
+            "albedoMap": {
+              "__uuid__": "d39f2a77-bfe2-41d7-a9be-9fa72307489b@7d6ab",
+              "__expectedType__": "cc.Texture2D"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
