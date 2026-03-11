@@ -1,5 +1,6 @@
 import { _decorator, Component, Slider, Label, math, Button, Node } from 'cc';
 import { ChefBehavior } from 'db://assets/scripts/ChefBehavior';
+import { CountdownActivator } from 'db://assets/scripts/CountdownActivator';
 const { ccclass, property } = _decorator;
 
 @ccclass('SellCoinSlider')
@@ -10,10 +11,10 @@ export class SellCoinSlider extends Component {
     @property(Label)
     public coinLabel: Label = null;
 
-    @property({ tooltip: 'Giá trị coin nhỏ nhất nhận được khi bán.' })
+    @property({ tooltip: 'Gia tri coin nho nhat khi ban.' })
     public minCoin: number = 50;
 
-    @property({ tooltip: 'Giá trị coin lớn nhất nhận được khi bán.' })
+    @property({ tooltip: 'Gia tri coin lon nhat khi ban.' })
     public maxCoin: number = 999;
 
     @property(Button)
@@ -34,23 +35,31 @@ export class SellCoinSlider extends Component {
     @property(Node)
     public secondaryShowNode: Node = null;
 
-    @property({ type: ChefBehavior, tooltip: 'Chef chính nhận coin. Có thể để trống nếu dùng danh sách bên dưới.' })
+    @property({ type: ChefBehavior, tooltip: 'Chef chinh nhan coin.' })
     public chefTarget: ChefBehavior = null;
 
-    @property({ type: [ChefBehavior], tooltip: 'Thêm các chef khác cũng nhận được coin.' })
+    @property({ type: [ChefBehavior], tooltip: 'Chen cac chef khac cung nhan coin.' })
     public additionalChefTargets: ChefBehavior[] = [];
 
-    @property({ tooltip: 'Giữ ChefBehavior ở trạng thái tắt cho đến khi nhấn nút confirm.' })
+    @property({ tooltip: 'Giup khoa chef cho den khi bam confirm.' })
     public lockChefsUntilConfirm: boolean = true;
+
+    @property({ type: [CountdownActivator], tooltip: 'Countdown chi bat dau sau khi bam confirm.' })
+    public countdownActivators: CountdownActivator[] = [];
+
+    @property({ tooltip: 'Neu true, moi lan bam confirm se reset countdown.' })
+    public restartCountdownOnConfirm: boolean = false;
 
     private currentCoin: number = 50;
     private chefsUnlocked: boolean = false;
+    private countdownStarted: boolean = false;
 
     protected onLoad(): void {
         this.ensureValidRange();
         if (!this.lockChefsUntilConfirm) {
             this.chefsUnlocked = true;
         }
+        this.prepareCountdownsForManualStart();
     }
 
     protected onEnable(): void {
@@ -136,6 +145,7 @@ export class SellCoinSlider extends Component {
         this.applyCoinValueToChef();
         this.toggleNodePair(this.confirmHideNode, this.confirmShowNode);
         this.unlockChefs();
+        this.triggerCountdowns();
     }
 
     private handleSecondaryClicked(): void {
@@ -196,7 +206,7 @@ export class SellCoinSlider extends Component {
         if (this.chefTarget) {
             result.push(this.chefTarget);
         }
-        if (this.additionalChefTargets && this.additionalChefTargets.length > 0) {
+        if (this.additionalChefTargets) {
             for (const chef of this.additionalChefTargets) {
                 if (!chef) {
                     continue;
@@ -231,6 +241,22 @@ export class SellCoinSlider extends Component {
         this.setChefEnabledState(targets, true);
     }
 
+    private triggerCountdowns(): void {
+        if (!this.restartCountdownOnConfirm && this.countdownStarted) {
+            return;
+        }
+        if (!this.countdownActivators || this.countdownActivators.length === 0) {
+            return;
+        }
+        for (const activator of this.countdownActivators) {
+            if (!activator) {
+                continue;
+            }
+            activator.startCountdown();
+        }
+        this.countdownStarted = true;
+    }
+
     private ensureValidRange(): void {
         if (this.minCoin === this.maxCoin) {
             return;
@@ -245,5 +271,17 @@ export class SellCoinSlider extends Component {
 
     private getRange(): [number, number] {
         return [Math.round(this.minCoin), Math.round(this.maxCoin)];
+    }
+
+    private prepareCountdownsForManualStart(): void {
+        if (!this.countdownActivators) {
+            return;
+        }
+        for (const activator of this.countdownActivators) {
+            if (!activator) {
+                continue;
+            }
+            activator.holdAtInitialValue();
+        }
     }
 }
