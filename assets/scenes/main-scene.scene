@@ -21932,7 +21932,7 @@
       null
     ],
     "finalSecondsSprite": {
-      "__uuid__": "6d175d40-f239-4992-a94a-e6cef590595b@f9941",
+      "__uuid__": "88e678e0-e5d8-483b-abab-fdddd191dad0@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "finalSecondsThreshold": 5,
