@@ -116,10 +116,11 @@ export class TusButton extends Component {
         object_pool_manager.instance.Spawn(this.flash, new Vec3(0,0,0), null, this.flashParent);
 
         this._count++;
+        this.applySpeedBoost(this.chefBehavior);
+        this.applySpeedBoost(this.chefWorkerBehavior);
 
         if (this.isWorkerActive)
         {
-            this.applySpeedBoost(this.chefWorkerBehavior);
 
             if (this._count >= this.countMax + this.countWorkerMax)
             {
@@ -130,8 +131,6 @@ export class TusButton extends Component {
 
             return;
         }
-
-        this.applySpeedBoost(this.chefBehavior);
 
         if (this._count >= this.countMax) {
 
