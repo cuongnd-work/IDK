@@ -5,61 +5,68 @@ const { ccclass, property } = _decorator;
 @ccclass('CountdownActivator')
 export class CountdownActivator extends Component {
     @property({ tooltip: 'Thời gian đếm ngược (giây).' })
-    public countdownSeconds: number = 30;
+    public countdownSeconds = 30;
 
     @property({ tooltip: 'Node sẽ được bật khi đếm ngược về 0.' })
-    public targetNode: Node = null;
+    public targetNode: Node | null = null;
 
-    @property({ type: [Node], tooltip: 'Danh sách node được bật thêm khi đếm ngược hoàn tất.' })
+    @property({ type: [Node], tooltip: 'Các node bổ sung được bật khi đếm ngược về 0.' })
     public additionalEnableNodes: Node[] = [];
 
-    @property({ type: [Animation], tooltip: 'Các Animation sẽ được phát khi đếm ngược kết thúc.' })
+    @property({ type: [Animation], tooltip: 'Các Animation phát khi đếm ngược kết thúc.' })
     public completeAnimations: Animation[] = [];
 
-    @property({ type: [OrderPopup], tooltip: 'OrderPopup sẽ đổi sprite trong những giây cuối.' })
+    @property({ type: [OrderPopup], tooltip: 'Danh sách OrderPopup sẽ đổi sprite ở những giây cuối.' })
     public trackedOrderPopups: OrderPopup[] = [];
 
     @property(SpriteFrame)
-    public finalSecondsSprite: SpriteFrame = null;
+    public finalSecondsSprite: SpriteFrame | null = null;
 
     @property({ tooltip: 'Đổi sprite khi thời gian còn lại nhỏ hơn hoặc bằng giá trị này.' })
-    public finalSecondsThreshold: number = 5;
+    public finalSecondsThreshold = 5;
+
+    @property({ tooltip: 'Độ trễ giữa mỗi OrderPopup đổi sprite (giây).' })
+    public orderPopupSequentialDelay = 0.05;
 
     @property(Label)
-    public countdownLabel: Label = null;
+    public countdownLabel: Label | null = null;
 
-    @property({ tooltip: 'Tự động bắt đầu khi node bật.' })
-    public autoStart: boolean = false;
+    @property({ tooltip: 'Tự động chạy khi node bật.' })
+    public autoStart = false;
 
-    private remainingTime: number = 0;
-    private isRunning: boolean = false;
+    private remainingTime = 0;
+    private isRunning = false;
     private defaultLabelColor: Color | null = null;
-    private urgentColor: Color = new Color(255, 64, 64, 255);
+    private readonly urgentColor: Color = new Color(255, 64, 64, 255);
     private labelOpacity: UIOpacity | null = null;
     private blinkTween: Tween<UIOpacity> | null = null;
-    private isInUrgentState: boolean = false;
-    private hasAppliedOrderPopupSprite: boolean = false;
+    private isInUrgentState = false;
+    private hasAppliedOrderPopupSprite = false;
+    private popupOverrideQueue: OrderPopup[] = [];
+    private currentPopupOverrideIndex = 0;
 
     protected onEnable(): void {
         if (this.autoStart) {
             this.startCountdown();
-        } else {
-            this.remainingTime = Math.max(0, this.countdownSeconds);
-            this.updateLabel();
-            this.setUrgentState(false);
-            this.setCountdownTargetsActive(false);
-            this.resetOrderPopupAppearance();
+            return;
         }
-    }
 
-    protected onDisable(): void {
-        this.stopCountdown();
+        this.remainingTime = Math.max(0, this.countdownSeconds);
+        this.updateLabel();
         this.setUrgentState(false);
         this.setCountdownTargetsActive(false);
         this.resetOrderPopupAppearance();
     }
 
+    protected onDisable(): void {
+        this.stopCountdown();
+        this.setCountdownTargetsActive(false);
+        this.resetOrderPopupAppearance();
+    }
+
     public startCountdown(duration?: number): void {
+        this.stopCountdown();
+
         this.remainingTime = Math.max(0, typeof duration === 'number' ? duration : this.countdownSeconds);
         this.isRunning = this.remainingTime > 0;
         this.setUrgentState(false);
@@ -67,8 +74,6 @@ export class CountdownActivator extends Component {
         this.resetOrderPopupAppearance();
 
         this.updateLabel();
-        this.unschedule(this.handleTick);
-
         if (this.isRunning) {
             this.schedule(this.handleTick, 0.016);
         } else {
@@ -77,19 +82,17 @@ export class CountdownActivator extends Component {
     }
 
     public stopCountdown(): void {
-        this.unschedule(this.handleTick);
-        this.isRunning = false;
+        this.stopTicking();
+        this.clearPopupOverrideQueue();
         this.setUrgentState(false);
-        this.setCountdownTargetsActive(false);
+        this.resetOrderPopupAppearance();
     }
 
     public holdAtInitialValue(): void {
         this.stopCountdown();
         this.remainingTime = Math.max(0, this.countdownSeconds);
         this.updateLabel();
-        this.setUrgentState(false);
         this.setCountdownTargetsActive(false);
-        this.resetOrderPopupAppearance();
     }
 
     private handleTick(dt: number): void {
@@ -106,7 +109,7 @@ export class CountdownActivator extends Component {
     }
 
     private finishCountdown(): void {
-        this.stopCountdown();
+        this.stopTicking();
         this.remainingTime = 0;
         this.updateLabel();
         this.setUrgentState(false);
@@ -115,16 +118,35 @@ export class CountdownActivator extends Component {
         this.node.active = false;
     }
 
+    private stopTicking(): void {
+        this.unschedule(this.handleTick);
+        this.isRunning = false;
+    }
+
     private updateLabel(): void {
         if (!this.countdownLabel) {
             return;
         }
-        this.ensureLabelHelpers();
 
+        this.ensureLabelHelpers();
         const secondsLeft = Math.max(0, Math.ceil(this.remainingTime));
         this.countdownLabel.string = this.formatTime(secondsLeft);
         this.updateUrgentState(secondsLeft);
         this.updateOrderPopupCountdown(secondsLeft);
+    }
+
+    private ensureLabelHelpers(): void {
+        if (!this.countdownLabel) {
+            return;
+        }
+
+        if (!this.defaultLabelColor) {
+            this.defaultLabelColor = this.countdownLabel.color.clone();
+        }
+
+        if (!this.labelOpacity) {
+            this.labelOpacity = this.countdownLabel.getComponent(UIOpacity) ?? this.countdownLabel.node.addComponent(UIOpacity);
+        }
     }
 
     private formatTime(totalSeconds: number): string {
@@ -137,18 +159,6 @@ export class CountdownActivator extends Component {
         return value.toString().padStart(2, '0');
     }
 
-    private ensureLabelHelpers(): void {
-        if (!this.countdownLabel) {
-            return;
-        }
-        if (!this.defaultLabelColor) {
-            this.defaultLabelColor = this.countdownLabel.color.clone();
-        }
-        if (!this.labelOpacity) {
-            this.labelOpacity = this.countdownLabel.getComponent(UIOpacity) ?? this.countdownLabel.node.addComponent(UIOpacity);
-        }
-    }
-
     private updateUrgentState(secondsLeft: number): void {
         const shouldBeUrgent = secondsLeft > 0 && secondsLeft <= 10;
         this.setUrgentState(shouldBeUrgent);
@@ -158,6 +168,7 @@ export class CountdownActivator extends Component {
         if (this.isInUrgentState === enable) {
             return;
         }
+
         this.isInUrgentState = enable;
         if (enable) {
             this.applyUrgentVisuals();
@@ -170,13 +181,14 @@ export class CountdownActivator extends Component {
         if (!this.countdownLabel) {
             return;
         }
+
         this.ensureLabelHelpers();
-        if (this.countdownLabel) {
-            this.countdownLabel.color = this.urgentColor.clone();
-        }
+        this.countdownLabel.color = this.urgentColor.clone();
+
         if (!this.labelOpacity) {
             return;
         }
+
         this.labelOpacity.opacity = 255;
         this.stopBlinkTween();
         this.blinkTween = tween(this.labelOpacity)
@@ -191,13 +203,17 @@ export class CountdownActivator extends Component {
             this.stopBlinkTween();
             return;
         }
+
         this.ensureLabelHelpers();
+
         if (this.defaultLabelColor) {
             this.countdownLabel.color = this.defaultLabelColor.clone();
         }
+
         if (this.labelOpacity) {
             this.labelOpacity.opacity = 255;
         }
+
         this.stopBlinkTween();
     }
 
@@ -212,10 +228,8 @@ export class CountdownActivator extends Component {
         if (this.targetNode) {
             this.targetNode.active = active;
         }
-        if (!this.additionalEnableNodes) {
-            return;
-        }
-        for (const node of this.additionalEnableNodes) {
+
+        for (const node of this.additionalEnableNodes ?? []) {
             if (!node) {
                 continue;
             }
@@ -224,14 +238,8 @@ export class CountdownActivator extends Component {
     }
 
     private playCompletionAnimations(): void {
-        if (!this.completeAnimations) {
-            return;
-        }
-        for (const anim of this.completeAnimations) {
-            if (!anim) {
-                continue;
-            }
-            anim.play();
+        for (const anim of this.completeAnimations ?? []) {
+            anim?.play();
         }
     }
 
@@ -239,28 +247,78 @@ export class CountdownActivator extends Component {
         if (!this.finalSecondsSprite || !this.trackedOrderPopups || this.trackedOrderPopups.length === 0) {
             return;
         }
-        if (secondsLeft > 0 && secondsLeft <= Math.max(1, this.finalSecondsThreshold)) {
-            if (this.hasAppliedOrderPopupSprite) {
-                return;
-            }
-            for (const popup of this.trackedOrderPopups) {
-                popup?.applyCountdownAppearance(this.finalSecondsSprite);
-            }
-            this.hasAppliedOrderPopupSprite = true;
-        } else if (secondsLeft > this.finalSecondsThreshold && this.hasAppliedOrderPopupSprite) {
+
+        const threshold = Math.max(1, Math.floor(this.finalSecondsThreshold));
+        if (secondsLeft > 0 && secondsLeft <= threshold) {
+            this.startSequentialPopupOverride();
+        } else if (secondsLeft > threshold) {
             this.resetOrderPopupAppearance();
         }
     }
 
+    private startSequentialPopupOverride(): void {
+        if (this.hasAppliedOrderPopupSprite) {
+            return;
+        }
+
+        const validPopups = (this.trackedOrderPopups ?? []).filter((popup) => !!popup);
+        if (validPopups.length === 0) {
+            return;
+        }
+
+        this.clearPopupOverrideQueue();
+        this.hasAppliedOrderPopupSprite = true;
+        this.popupOverrideQueue = validPopups.sort(() => Math.random() - 0.5);
+        this.currentPopupOverrideIndex = 0;
+
+        this.applyPopupOverrideStep();
+        if (this.popupOverrideQueue.length > this.currentPopupOverrideIndex) {
+            const delay = Math.max(0.01, this.orderPopupSequentialDelay);
+            this.schedule(this.applyPopupOverrideStep, delay);
+        }
+    }
+
+    private applyPopupOverrideStep = (): void => {
+        if (!this.popupOverrideQueue || this.popupOverrideQueue.length === 0) {
+            this.clearPopupOverrideQueue();
+            return;
+        }
+
+        if (!this.finalSecondsSprite) {
+            this.clearPopupOverrideQueue();
+            return;
+        }
+
+        if (this.currentPopupOverrideIndex >= this.popupOverrideQueue.length) {
+            this.clearPopupOverrideQueue();
+            return;
+        }
+
+        const popup = this.popupOverrideQueue[this.currentPopupOverrideIndex];
+        popup?.applyCountdownAppearance(this.finalSecondsSprite);
+        this.currentPopupOverrideIndex++;
+
+        if (this.currentPopupOverrideIndex >= this.popupOverrideQueue.length) {
+            this.clearPopupOverrideQueue();
+        }
+    };
+
+    private clearPopupOverrideQueue(): void {
+        this.unschedule(this.applyPopupOverrideStep);
+        this.popupOverrideQueue = [];
+        this.currentPopupOverrideIndex = 0;
+    }
+
     private resetOrderPopupAppearance(): void {
-        if (!this.hasAppliedOrderPopupSprite) {
+        if (!this.hasAppliedOrderPopupSprite && this.popupOverrideQueue.length === 0) {
+            this.clearPopupOverrideQueue();
             return;
         }
+
+        this.clearPopupOverrideQueue();
         this.hasAppliedOrderPopupSprite = false;
-        if (!this.trackedOrderPopups) {
-            return;
-        }
-        for (const popup of this.trackedOrderPopups) {
+
+        for (const popup of this.trackedOrderPopups ?? []) {
             popup?.resetCountdownAppearance();
         }
     }

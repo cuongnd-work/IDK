@@ -21936,6 +21936,7 @@
       "__expectedType__": "cc.SpriteFrame"
     },
     "finalSecondsThreshold": 5,
+    "orderPopupSequentialDelay": 0.05,
     "countdownLabel": {
       "__id__": 972
     },
