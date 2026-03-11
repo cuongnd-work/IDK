@@ -28,6 +28,8 @@ export class OrderPopup extends Component {
     orderCompletedEvents: EventHandler[] = [];
 
     private _remainingCount = 0;
+    private countdownOverrideSprite: SpriteFrame | null = null;
+    private countdownOverrideActive = false;
 
     start () {
         if (this.initialCount <= 0) {
@@ -86,6 +88,35 @@ export class OrderPopup extends Component {
         }
 
         this.text.string = this._remainingCount.toString();
+    }
+
+    public applyCountdownAppearance (sprite: SpriteFrame | null): void {
+        if (!sprite || !this.targetSprite) {
+            return;
+        }
+        if (!this.countdownOverrideActive) {
+            this.countdownOverrideSprite = this.targetSprite.spriteFrame;
+        }
+        this.countdownOverrideActive = true;
+        this.targetSprite.spriteFrame = sprite;
+        if (this.text) {
+            this.text.node.active = false;
+        }
+    }
+
+    public resetCountdownAppearance (): void {
+        if (!this.countdownOverrideActive) {
+            return;
+        }
+        this.countdownOverrideActive = false;
+        if (this.targetSprite && this.countdownOverrideSprite) {
+            this.targetSprite.spriteFrame = this.countdownOverrideSprite;
+        }
+        this.countdownOverrideSprite = null;
+        if (this.text) {
+            this.text.node.active = true;
+            this.refreshCountLabel();
+        }
     }
 
     private notifyOrderCompleted (): void {

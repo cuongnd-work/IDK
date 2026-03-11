@@ -1,4 +1,5 @@
-import { _decorator, Component, Label, Node, Color, UIOpacity, tween, Tween, Animation } from 'cc';
+import { _decorator, Component, Label, Node, Color, UIOpacity, tween, Tween, Animation, SpriteFrame } from 'cc';
+import { OrderPopup } from 'db://assets/scripts/OrderPopup';
 const { ccclass, property } = _decorator;
 
 @ccclass('CountdownActivator')
@@ -15,6 +16,15 @@ export class CountdownActivator extends Component {
     @property({ type: [Animation], tooltip: 'Các Animation sẽ được phát khi đếm ngược kết thúc.' })
     public completeAnimations: Animation[] = [];
 
+    @property({ type: [OrderPopup], tooltip: 'OrderPopup sẽ đổi sprite trong những giây cuối.' })
+    public trackedOrderPopups: OrderPopup[] = [];
+
+    @property(SpriteFrame)
+    public finalSecondsSprite: SpriteFrame = null;
+
+    @property({ tooltip: 'Đổi sprite khi thời gian còn lại nhỏ hơn hoặc bằng giá trị này.' })
+    public finalSecondsThreshold: number = 5;
+
     @property(Label)
     public countdownLabel: Label = null;
 
@@ -28,6 +38,7 @@ export class CountdownActivator extends Component {
     private labelOpacity: UIOpacity | null = null;
     private blinkTween: Tween<UIOpacity> | null = null;
     private isInUrgentState: boolean = false;
+    private hasAppliedOrderPopupSprite: boolean = false;
 
     protected onEnable(): void {
         if (this.autoStart) {
@@ -37,6 +48,7 @@ export class CountdownActivator extends Component {
             this.updateLabel();
             this.setUrgentState(false);
             this.setCountdownTargetsActive(false);
+            this.resetOrderPopupAppearance();
         }
     }
 
@@ -44,6 +56,7 @@ export class CountdownActivator extends Component {
         this.stopCountdown();
         this.setUrgentState(false);
         this.setCountdownTargetsActive(false);
+        this.resetOrderPopupAppearance();
     }
 
     public startCountdown(duration?: number): void {
@@ -51,6 +64,7 @@ export class CountdownActivator extends Component {
         this.isRunning = this.remainingTime > 0;
         this.setUrgentState(false);
         this.setCountdownTargetsActive(false);
+        this.resetOrderPopupAppearance();
 
         this.updateLabel();
         this.unschedule(this.handleTick);
@@ -75,6 +89,7 @@ export class CountdownActivator extends Component {
         this.updateLabel();
         this.setUrgentState(false);
         this.setCountdownTargetsActive(false);
+        this.resetOrderPopupAppearance();
     }
 
     private handleTick(dt: number): void {
@@ -109,6 +124,7 @@ export class CountdownActivator extends Component {
         const secondsLeft = Math.max(0, Math.ceil(this.remainingTime));
         this.countdownLabel.string = this.formatTime(secondsLeft);
         this.updateUrgentState(secondsLeft);
+        this.updateOrderPopupCountdown(secondsLeft);
     }
 
     private formatTime(totalSeconds: number): string {
@@ -216,6 +232,36 @@ export class CountdownActivator extends Component {
                 continue;
             }
             anim.play();
+        }
+    }
+
+    private updateOrderPopupCountdown(secondsLeft: number): void {
+        if (!this.finalSecondsSprite || !this.trackedOrderPopups || this.trackedOrderPopups.length === 0) {
+            return;
+        }
+        if (secondsLeft > 0 && secondsLeft <= Math.max(1, this.finalSecondsThreshold)) {
+            if (this.hasAppliedOrderPopupSprite) {
+                return;
+            }
+            for (const popup of this.trackedOrderPopups) {
+                popup?.applyCountdownAppearance(this.finalSecondsSprite);
+            }
+            this.hasAppliedOrderPopupSprite = true;
+        } else if (secondsLeft > this.finalSecondsThreshold && this.hasAppliedOrderPopupSprite) {
+            this.resetOrderPopupAppearance();
+        }
+    }
+
+    private resetOrderPopupAppearance(): void {
+        if (!this.hasAppliedOrderPopupSprite) {
+            return;
+        }
+        this.hasAppliedOrderPopupSprite = false;
+        if (!this.trackedOrderPopups) {
+            return;
+        }
+        for (const popup of this.trackedOrderPopups) {
+            popup?.resetCountdownAppearance();
         }
     }
 }
