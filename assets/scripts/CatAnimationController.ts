@@ -1,6 +1,5 @@
 import { _decorator, Component, Node, SkeletalAnimation } from 'cc';
 import { OrderPopup } from 'db://assets/scripts/OrderPopup';
-import { CurrencyView } from 'db://assets/scripts/CurrencyView';
 const { ccclass, property } = _decorator;
 
 @ccclass('CatAnimationController')
@@ -10,6 +9,9 @@ export class CatAnimationController extends Component {
 
     @property(OrderPopup)
     public orderPopup: OrderPopup = null;
+
+    private animationSpeedMultiplier = 1;
+    private currentClip: string | null = null;
 
     protected onLoad (): void {
         this.resolveOrderPopup();
@@ -25,32 +27,61 @@ export class CatAnimationController extends Component {
         return this.orderPopup;
     }
 
-    public doIdle(){
-        this.animation.play("Idle");
+    public doIdle (): void {
+        this.playClip('Idle');
     }
 
-    public doWalk(){
+    public doWalk (): void {
         // const popup = this.resolveOrderPopup();
         // if (popup) {
         //     popup.sell();
         // }
 
-        if(this.sellTargetPopup){
+        if (this.sellTargetPopup){
             this.sellTargetPopup.sell();
         }
 
-        if (CurrencyView.instance) {
-            CurrencyView.instance.addCurrency(50);
+        this.playClip('Run');
+    }
+
+    public doBedo (): void {
+        this.playClip('Bedo');
+    }
+
+    public doDoing (): void {
+        this.playClip('DapBua');
+    }
+
+    public setAnimationSpeedMultiplier (multiplier: number): void {
+        const clamped = Math.max(0.01, multiplier);
+        this.animationSpeedMultiplier = clamped;
+        this.applySpeedToClip();
+    }
+
+    private playClip (clipName: string): void {
+        if (!this.animation) {
+            return;
         }
-        this.animation.play("Run");
+
+        this.currentClip = clipName;
+        this.animation.play(clipName);
+        this.applySpeedToClip(clipName);
     }
 
-    public doBedo(){
-        this.animation.play("Bedo");
-    }
+    private applySpeedToClip (clipName?: string): void {
+        if (!this.animation) {
+            return;
+        }
 
-    public doDoing(){
-        this.animation.play("DapBua");
+        const targetClip = clipName ?? this.currentClip;
+        if (!targetClip) {
+            return;
+        }
+
+        const state = this.animation.getState(targetClip);
+        if (state) {
+            state.speed = this.animationSpeedMultiplier;
+        }
     }
 }
 

@@ -3,12 +3,14 @@ import { CatAnimationController } from './CatAnimationController';
 import { CustomersQueueManager } from 'db://assets/scripts/customers/CustomersQueueManager';
 import { CustomersQueueEvent, CustomersQueueEvents } from 'db://assets/scripts/customers/CustomersQueueEvents';
 import {MoveTargetProvider} from "db://assets/scripts/MoveTargetProvider";
+import { CurrencyView } from 'db://assets/scripts/CurrencyView';
 
 const { ccclass, property } = _decorator;
 
 enum ChefState {
     Doing,
     MoveWithBedo,
+    WaitAtPointB,
     MoveWithWalk,
 }
 
@@ -34,6 +36,12 @@ export class ChefBehavior extends Component {
     @property
     stopDistance = 0.2;
 
+    @property({ tooltip: 'Base seconds the chef stays at point A before moving.' })
+    public pointAWaitSeconds = 1;
+
+    @property({ tooltip: 'Base seconds the chef stays at point B before returning.' })
+    public pointBWaitSeconds = 0.75;
+
     /* ================= ROTATION ================= */
 
     @property
@@ -44,6 +52,9 @@ export class ChefBehavior extends Component {
 
     @property(Node)
     coin: Node = null!;
+
+    @property({ tooltip: 'Giá trị coin nhận được mỗi lần đầu bếp bán món.' })
+    public baseSellCoinReward: number = 50;
 
     /* ================= ANIM ================= */
 
@@ -73,10 +84,12 @@ export class ChefBehavior extends Component {
     private _localDir = new Vec3();
     private _rotQuat = new Quat();
     private _lastSpeedForQueue = -1;
+    private _sellCoinReward = 50;
 
     /* ================= LIFE ================= */
 
     protected onLoad (): void {
+        this._sellCoinReward = this.normalizeSellCoinReward(this.baseSellCoinReward);
         CustomersQueueEvents.on(CustomersQueueEvent.ORDER_COMPLETED, this.onCustomerOrderCompleted, this);
     }
 
@@ -93,14 +106,12 @@ export class ChefBehavior extends Component {
         this.resolveQueueManagerReference();
         this.resolveColumnFromCurrentCustomer();
         this.assignFrontCustomer();
-        this._lastSpeedForQueue = this.currentSpeed;
-        this.updateQueueAdvanceSpeed();
+        this.syncSpeedDependents();
     }
 
     update (dt: number): void {
         if (this.currentSpeed !== this._lastSpeedForQueue) {
-            this._lastSpeedForQueue = this.currentSpeed;
-            this.updateQueueAdvanceSpeed();
+            this.syncSpeedDependents();
         }
 
         if (
@@ -130,7 +141,7 @@ export class ChefBehavior extends Component {
         this._state = ChefState.Doing;
         this.animCtrl.doDoing();
 
-        const doingTime = this.getDoingTime();
+        const doingTime = this.getPointAWaitTime();
 
         this.scheduleOnce(() => {
             this._currentTarget = this.pointB;
@@ -139,8 +150,8 @@ export class ChefBehavior extends Component {
         }, doingTime);
     }
 
-    private getDoingTime (): number {
-        return 1 * this.speed / this.currentSpeed;
+    private getPointAWaitTime (): number {
+        return this.getScaledDuration(this.pointAWaitSeconds);
     }
 
     private enterMoveWithBedo (): void {
@@ -155,6 +166,7 @@ export class ChefBehavior extends Component {
         this.hamburger.active = false;
 
         this.coin.active = true;
+        this.rewardSale();
 
         if (this.currentSpeed >= 10) {
             return;
@@ -162,6 +174,81 @@ export class ChefBehavior extends Component {
         setTimeout(() => {
             this.coin.active = false;
         }, 1000);
+    }
+
+    private waitAtPointB (): void {
+        this._state = ChefState.WaitAtPointB;
+        const delay = this.getPointBWaitTime();
+        if (delay <= 0) {
+            this.resumeFromPointB();
+            return;
+        }
+
+        this.scheduleOnce(() => {
+            this.resumeFromPointB();
+        }, delay);
+    }
+
+    private resumeFromPointB (): void {
+        this._currentTarget = this.pointA;
+        this.enterMoveWithWalk();
+    }
+
+    private getPointBWaitTime (): number {
+        return this.getScaledDuration(this.pointBWaitSeconds);
+    }
+
+    private getScaledDuration (baseDuration: number): number {
+        const clampedBase = Math.max(0, baseDuration);
+        if (clampedBase <= 0) {
+            return 0;
+        }
+
+        const baseSpeed = Math.max(0.01, this.speed);
+        const current = Math.max(0.01, this.currentSpeed);
+        return clampedBase * (baseSpeed / current);
+    }
+
+    public applySpeedBoost (percentIncrease: number): void {
+        const normalized = Math.max(0, percentIncrease);
+        if (normalized <= 0) {
+            return;
+        }
+
+        const multiplier = 1 + normalized;
+        this.currentSpeed = Math.max(0.01, this.currentSpeed * multiplier);
+        this.syncSpeedDependents();
+    }
+
+    /* ================= COIN ================= */
+
+    public setSellCoinReward (amount: number): void {
+        this._sellCoinReward = this.normalizeSellCoinReward(amount);
+    }
+
+    public getSellCoinReward (): number {
+        return this._sellCoinReward;
+    }
+
+    private normalizeSellCoinReward (value: number): number {
+        if (typeof value !== 'number' || Number.isNaN(value)) {
+            return this._sellCoinReward;
+        }
+        return Math.max(0, Math.round(value));
+    }
+
+    private rewardSale (): void {
+        const reward = this.getSellCoinReward();
+        if (reward <= 0) {
+            return;
+        }
+
+        const view = CurrencyView.instance;
+        if (!view) {
+            return;
+        }
+
+        view.addCurrency(reward);
     }
 
     /* ================= CUSTOMER ================= */
@@ -260,6 +347,22 @@ export class ChefBehavior extends Component {
         manager.setColumnAdvanceMultiplier(this.columnIndex, ratio);
     }
 
+    private updateAnimationPlaybackSpeed (): void {
+        if (!this.animCtrl) {
+            return;
+        }
+
+        const base = Math.max(0.01, this.speed);
+        const multiplier = Math.max(0.01, this.currentSpeed) / base;
+        this.animCtrl.setAnimationSpeedMultiplier(multiplier);
+    }
+
+    private syncSpeedDependents (): void {
+        this._lastSpeedForQueue = this.currentSpeed;
+        this.updateQueueAdvanceSpeed();
+        this.updateAnimationPlaybackSpeed();
+    }
+
     /* ================= MOVE ================= */
 
     private move3D (dt: number): void {
@@ -328,8 +431,7 @@ export class ChefBehavior extends Component {
 
     private onReachTarget (): void {
         if (this._state === ChefState.MoveWithBedo) {
-            this._currentTarget = this.pointA;
-            this.enterMoveWithWalk();
+            this.waitAtPointB();
         }
         else if (this._state === ChefState.MoveWithWalk) {
             this.enterDoing();

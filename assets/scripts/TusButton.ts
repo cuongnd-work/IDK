@@ -117,9 +117,9 @@ export class TusButton extends Component {
 
         this._count++;
 
-        if(this.isWorkerActive)
+        if (this.isWorkerActive)
         {
-            this.chefWorkerBehavior.currentSpeed += 3;
+            this.applySpeedBoost(this.chefWorkerBehavior);
 
             if (this._count >= this.countMax + this.countWorkerMax)
             {
@@ -131,7 +131,7 @@ export class TusButton extends Component {
             return;
         }
 
-        this.chefBehavior.currentSpeed += 3;
+        this.applySpeedBoost(this.chefBehavior);
 
         if (this._count >= this.countMax) {
 
@@ -182,6 +182,14 @@ export class TusButton extends Component {
         if (!this.audioSource || !this.clickSound) return;
 
         this.audioSource.playOneShot(this.clickSound, 1);
+    }
+
+    private applySpeedBoost (target: ChefBehavior | null): void {
+        if (!target) {
+            return;
+        }
+
+        target.applySpeedBoost(0.15);
     }
 
     /* ================= UTILS ================= */
