@@ -1,5 +1,6 @@
-import { _decorator, Component, Prefab, Node, instantiate, Vec3, Camera, Canvas, Layers } from 'cc';
+import { _decorator, Component, Prefab, Node, instantiate, Vec3, Camera, Canvas, Layers, Label, math } from 'cc';
 import { ChefBehavior } from 'db://assets/scripts/ChefBehavior';
+import { SellCoinSlider } from 'db://assets/scripts/SellCoinSlider';
 
 const { ccclass, property } = _decorator;
 
@@ -13,6 +14,12 @@ export class ChefPointBUISpawner extends Component {
 
     @property({ type: Node, tooltip: 'Parent UI (Canvas) de them node moi vao.' })
     public uiParent: Node = null;
+
+    @property({ type: SellCoinSlider, tooltip: 'Slider lay gia tri coin de set label.' })
+    public slider: SellCoinSlider = null;
+
+    @property({ tooltip: 'Tu dong update label moi lan spawn coin.' })
+    public applySliderValueToLabel: boolean = true;
 
     @property({ type: Camera, tooltip: 'Camera 3D de chuyen point B sang toa do man hinh.' })
     public worldCamera: Camera = null;
@@ -72,6 +79,19 @@ export class ChefPointBUISpawner extends Component {
             Vec3.add(this._uiWorldPos, this._uiWorldPos, this.uiOffset);
         }
         spawned.setWorldPosition(this._uiWorldPos);
+        this.updateCoinLabel(spawned);
+    }
+
+    private updateCoinLabel(coinNode: Node): void {
+        if (!this.applySliderValueToLabel || !this.slider) {
+            return;
+        }
+        const label = coinNode.getComponentInChildren(Label);
+        if (!label) {
+            return;
+        }
+        const value = math.clamp(Math.round(this.slider.coinValue), this.slider.minCoin, this.slider.maxCoin);
+        label.string = `+${value}`;
     }
 
     private resolveWorldCamera(): Camera | null {
