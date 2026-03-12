@@ -93,11 +93,19 @@ export class TusButton extends Component {
         this.buttonSpeed.node.on(Button.EventType.CLICK, this.ButtonSpeedClicker, this);
         this.buttonWorker.node.on(Button.EventType.CLICK, this.ButtonWorkerClicker, this);
 
-        this.zoom_button1.startZoom();
-        this.zoom_button2.stopZoomAndReset();
+        this.zoom_button1.stopZoomAndReset();
+        this.zoom_button2.startZoom();
 
-        this.setButtonInteractable(this.buttonSpeed, true);
-        this.setButtonInteractable(this.buttonWorker, false);
+        this.setSpriteAlpha(this.zoom_button1.node, 100);
+        this.setSpriteAlpha(this.zoom_button2.node, 255);
+
+        this.hand.position = this.handTarget ? this.handTarget.position : this.hand.position;
+
+        this.workerClicked = false;
+        this.isWorkerActive = false;
+
+        this.setButtonInteractable(this.buttonSpeed, false);
+        this.setButtonInteractable(this.buttonWorker, true);
 
         CurrencyView.onCurrencyChanged(this.currencyChangeHandler, this);
         this.refreshButtonAvailability();
@@ -109,6 +117,10 @@ export class TusButton extends Component {
 
     public ButtonSpeedClicker (): void {
         if(this.isCompleted) return;
+
+        if (!this.isWorkerActive) {
+            return;
+        }
 
         if(!CurrencyView.instance.trySubtractCurrency(this.speedCostAmount)) return;
 
@@ -132,34 +144,29 @@ export class TusButton extends Component {
             return;
         }
 
-        if (this._count >= this.countMax) {
-
-            this.hand.position = this.handTarget.position;
-
-            this.zoom_button1.stopZoomAndReset();
-            this.zoom_button2.startZoom();
-
-            this.setSpriteAlpha(this.zoom_button1.node, 100);
-            this.setSpriteAlpha(this.zoom_button2.node, 255);
-
-            this.setButtonInteractable(this.buttonSpeed, false);
-            this.setButtonInteractable(this.buttonWorker, true);
-        }
+        // Flow now always stays on speed after worker activation.
     }
 
     private isWorkerActive: boolean = false;
+    private workerClicked: boolean = false;
 
     @property(Node)
     public worker: Node = null;
 
     public ButtonWorkerClicker (): void {
+        if (this.workerClicked) {
+            return;
+        }
+
         if(!CurrencyView.instance.trySubtractCurrency(this.workerCostAmount)) return;
 
         this.playClickSound();
 
-        this.setButtonInteractable(this.buttonSpeed, false);
+        this.workerClicked = true;
 
-        this.worker.active = true;
+        if (this.worker) {
+            this.worker.active = true;
+        }
 
         this.zoom_button2.stopZoomAndReset();
         this.zoom_button1.startZoom();
@@ -167,10 +174,11 @@ export class TusButton extends Component {
         this.setSpriteAlpha(this.zoom_button2.node, 100);
         this.setSpriteAlpha(this.zoom_button1.node, 255);
 
-        this.setButtonInteractable(this.buttonSpeed, true);
         this.setButtonInteractable(this.buttonWorker, false);
 
-        this.hand.position = this.handTarget2.position;
+        this.setButtonInteractable(this.buttonSpeed, true);
+
+        this.hand.position = this.handTarget2 ? this.handTarget2.position : this.hand.position;
 
         this.isWorkerActive = true;
     }
