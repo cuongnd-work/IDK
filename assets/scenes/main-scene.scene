@@ -26377,7 +26377,7 @@
         "__id__": 1198
       }
     ],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 1207
@@ -26852,7 +26852,7 @@
       "b": 255,
       "a": 255
     },
-    "_string": "Download \nNow",
+    "_string": "Play\nNow",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 50,

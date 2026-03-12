@@ -142,26 +142,17 @@ export class TusButton extends Component {
         this.playClickSound();
         object_pool_manager.instance.Spawn(this.flash, new Vec3(0,0,0), null, this.flashParent);
 
-        this._count++;
-        this.applySpeedBoost(this.chefBehavior);
-        this.applySpeedBoost(this.chefWorkerBehavior);
-        this.setChefSpeedNodesActive(true);
-
-        if (this.isWorkerActive)
-        {
-
-            if (this._count >= this.countMax + this.countWorkerMax)
-            {
-                this.endAnim?.play();
-                this.isCompleted = true;
-                // this.end.active = true;
-            }
-
+        const totalLimit = this.countMax + this.countWorkerMax;
+        if (this._count >= totalLimit) {
             this.hideHandTemporarily();
             return;
         }
 
-        // Flow now always stays on speed after worker activation.
+        this._count++;
+        this.applySpeedBoost(this.chefBehavior);
+        this.applySpeedBoost(this.chefWorkerBehavior);
+        this.setChefSpeedNodesActive(true);
+        this.hideHandTemporarily();
     }
 
     private isWorkerActive: boolean = false;
