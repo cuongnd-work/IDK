@@ -13336,7 +13336,7 @@
       }
     ],
     "_defaultClip": null,
-    "_useBakedAnimation": true,
+    "_useBakedAnimation": false,
     "_sockets": [],
     "_id": "a0wjxEaP5CMJVr2HuxTHET"
   },
