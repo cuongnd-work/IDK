@@ -135,7 +135,7 @@ export class TusSliderHand extends Component {
         this.handNode.setScale(this.initialScale);
         this.showHand(true);
         if (this.opacityComp) {
-            this.opacityComp.opacity = 0;
+            this.opacityComp.opacity = this.initialOpacity;
         }
 
         const targetPos = new Vec3();
@@ -145,6 +145,8 @@ export class TusSliderHand extends Component {
         const halfPress = pressDuration * 0.5;
         const pressScaleTarget = new Vec3(this.pressScaleVec.x, this.pressScaleVec.y, this.pressScaleVec.z);
         const initialScaleTarget = new Vec3(this.initialScale.x, this.initialScale.y, this.initialScale.z);
+        const dragDuration = Math.max(0, this.sweepDuration);
+        const fadeDuration = Math.max(0, this.fadeOutDuration);
 
         const cycle = tween()
             .call(() => {
@@ -160,9 +162,11 @@ export class TusSliderHand extends Component {
         }
 
         cycle
-            .to(this.sweepDuration, { position: targetPos }, { easing: 'sineInOut' })
+            .to(dragDuration, { position: targetPos }, { easing: 'sineInOut' })
+            .delay(fadeDuration)
             .call(() => {
                 this.handNode.setPosition(this.startPosition);
+                this.handNode.setScale(this.initialScale);
             })
             .delay(this.pauseDuration);
 
@@ -171,16 +175,15 @@ export class TusSliderHand extends Component {
             .start();
 
         if (this.opacityComp) {
-            const fadeHold = Math.max(0, this.sweepDuration + pressDuration - this.fadeInDuration - this.fadeOutDuration);
+            const holdDuration = pressDuration + dragDuration;
             this.opacityTween = tween(this.opacityComp)
                 .repeatForever(
                     tween()
                         .call(() => {
-                            this.opacityComp.opacity = 0;
+                            this.opacityComp.opacity = this.initialOpacity;
                         })
-                        .to(this.fadeInDuration, { opacity: this.initialOpacity })
-                        .delay(fadeHold)
-                        .to(this.fadeOutDuration, { opacity: 0 })
+                        .delay(holdDuration)
+                        .to(fadeDuration, { opacity: 0 }, { easing: 'sineIn' })
                         .delay(this.pauseDuration)
                 )
                 .start();
