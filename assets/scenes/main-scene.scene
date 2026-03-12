@@ -22450,6 +22450,7 @@
     "hand": {
       "__id__": 1058
     },
+    "handReappearDelay": 3,
     "chefBehavior": {
       "__id__": 845
     },

@@ -31,6 +31,9 @@ export class TusButton extends Component {
     @property(Node)
     public hand: Node = null!;
 
+    @property({ tooltip: 'Thoi gian (giay) khong tuong tac truoc khi hien lai hand.' })
+    public handReappearDelay: number = 3;
+
     @property(ChefBehavior)
     public chefBehavior: ChefBehavior = null!;
 
@@ -87,7 +90,15 @@ export class TusButton extends Component {
         this.refreshButtonAvailability();
     };
 
+    private handInitiallyActive: boolean = true;
+
     /* ================= LIFE ================= */
+
+    protected onLoad(): void {
+        if (this.hand) {
+            this.handInitiallyActive = this.hand.active;
+        }
+    }
 
     start () {
         this.buttonSpeed.node.on(Button.EventType.CLICK, this.ButtonSpeedClicker, this);
@@ -141,6 +152,7 @@ export class TusButton extends Component {
                 // this.end.active = true;
             }
 
+            this.hideHandTemporarily();
             return;
         }
 
@@ -181,6 +193,12 @@ export class TusButton extends Component {
         this.hand.position = this.handTarget2 ? this.handTarget2.position : this.hand.position;
 
         this.isWorkerActive = true;
+        if (!this.handInitiallyActive) {
+            this.restoreHandVisibility();
+        } else {
+            this.hideHandTemporarily();
+            this.restoreHandVisibility();
+        }
     }
 
     /* ================= SOUND ================= */
@@ -243,7 +261,29 @@ export class TusButton extends Component {
         this.refreshButtonAvailability();
     }
 
+    private hideHandTemporarily(): void {
+        if (!this.hand) {
+            return;
+        }
+        this.hand.active = false;
+        this.unschedule(this.restoreHandVisibility);
+        const delay = Math.max(0, this.handReappearDelay);
+        if (delay <= 0) {
+            this.restoreHandVisibility();
+            return;
+        }
+        this.scheduleOnce(this.restoreHandVisibility, delay);
+    }
+
+    private restoreHandVisibility(): void {
+        if (!this.hand) {
+            return;
+        }
+        this.hand.active = this.handInitiallyActive;
+    }
+
     onDestroy () {
+        this.unschedule(this.restoreHandVisibility);
         CurrencyView.offCurrencyChanged(this.currencyChangeHandler, this);
     }
 }
