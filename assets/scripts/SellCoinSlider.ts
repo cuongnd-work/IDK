@@ -11,6 +11,9 @@ export class SellCoinSlider extends Component {
     @property(Label)
     public coinLabel: Label = null;
 
+    @property({ type: [Label], tooltip: 'Danh sach label cung nhan gia tri coin.' })
+    public coinLabels: Label[] = [];
+
     @property({ tooltip: 'Gia tri coin nho nhat khi ban.' })
     public minCoin: number = 50;
 
@@ -198,10 +201,51 @@ export class SellCoinSlider extends Component {
     }
 
     private updateLabel(): void {
-        if (!this.coinLabel) {
+        const targets = this.collectCoinLabelTargets();
+        if (targets.length === 0) {
             return;
         }
-        this.coinLabel.string = `${this.currentCoin}`;
+        const coinString = `${this.currentCoin}`;
+        for (const label of targets) {
+            label.string = coinString;
+        }
+    }
+
+    public setCoinLabelTargets(labels: (Label | null | undefined)[]): void {
+        this.coinLabels.length = 0;
+        if (!labels) {
+            this.updateLabel();
+            return;
+        }
+        for (const label of labels) {
+            if (!label) {
+                continue;
+            }
+            if (this.coinLabels.includes(label)) {
+                continue;
+            }
+            this.coinLabels.push(label);
+        }
+        this.updateLabel();
+    }
+
+    private collectCoinLabelTargets(): Label[] {
+        const result: Label[] = [];
+        if (this.coinLabel) {
+            result.push(this.coinLabel);
+        }
+        if (this.coinLabels) {
+            for (const label of this.coinLabels) {
+                if (!label) {
+                    continue;
+                }
+                if (result.includes(label)) {
+                    continue;
+                }
+                result.push(label);
+            }
+        }
+        return result;
     }
 
     private toggleNodePair(disableTarget?: Node | null, enableTarget?: Node | null): void {
