@@ -162,14 +162,18 @@ export class SellCoinSlider extends Component {
     }
 
     private handleConfirmClicked(): void {
-        this.applyCoinValueToChef();
-        this.toggleNodePair(this.confirmHideNode, this.confirmShowNode);
-        this.unlockChefs();
-        this.triggerCountdowns();
+        this.processConfirmation(this.confirmHideNode, this.confirmShowNode);
     }
 
     private handleSecondaryClicked(): void {
-        this.toggleNodePair(this.secondaryHideNode, this.secondaryShowNode);
+        this.processConfirmation(this.secondaryHideNode, this.secondaryShowNode);
+    }
+
+    private processConfirmation(hideNode?: Node | null, showNode?: Node | null): void {
+        this.applyCoinValueToChef();
+        this.toggleNodePair(hideNode, showNode);
+        this.unlockChefs();
+        this.triggerCountdowns();
     }
 
     private handleSliderPressed(): void {
