@@ -23,7 +23,13 @@ export class ChefUIFollower extends Component {
     @property({ type: Vec3, tooltip: 'UI space offset after projection (same units as the Canvas).' })
     public uiOffset: Vec3 = new Vec3();
 
-    @property({ tooltip: 'Automatically toggle this UI node when the target is invisible/unavailable.' })
+    @property({ type: Node, tooltip: 'UI Flow node (child) that should toggle with the chef hamburger. Leave empty to use the first child.' })
+    public flowNode: Node = null;
+
+    @property({ tooltip: 'Disable the flow node when the chef hamburger is inactive.' })
+    public syncFlowWithHamburger: boolean = true;
+
+    @property({ tooltip: 'Automatically toggle this follower node when the target is invisible/unavailable.' })
     public autoHide: boolean = true;
 
     @property({ tooltip: 'Hide the UI if the target is behind the world camera.' })
@@ -33,12 +39,18 @@ export class ChefUIFollower extends Component {
     private _screenPos = new Vec3();
     private _uiWorldPos = new Vec3();
     private _initiallyActive = true;
+    private _flowNodeInitialActive = true;
     private _cachedCanvas: Canvas | null = null;
     private _cachedWorldCamera: Camera | null = null;
     private _cachedUICamera: Camera | null = null;
+    private _cachedChef: ChefBehavior | null = null;
 
     protected onLoad(): void {
         this._initiallyActive = this.node.active;
+        const flow = this.getFlowNode();
+        if (flow) {
+            this._flowNodeInitialActive = flow.active;
+        }
     }
 
     protected onEnable(): void {
@@ -47,10 +59,12 @@ export class ChefUIFollower extends Component {
 
     update(): void {
         this.followTarget();
+        this.syncFlowNodeVisibility();
     }
 
     public forceRefresh(): void {
         this.followTarget();
+        this.syncFlowNodeVisibility();
     }
 
     private followTarget(): void {
@@ -183,5 +197,64 @@ export class ChefUIFollower extends Component {
             return;
         }
         this.node.active = finalState;
+    }
+
+    private syncFlowNodeVisibility(): void {
+        const flow = this.getFlowNode();
+        if (!flow) {
+            return;
+        }
+        if (!this.syncFlowWithHamburger) {
+            return;
+        }
+        const chef = this.resolveChefTarget();
+        if (!chef || !chef.hamburger) {
+            return;
+        }
+        const shouldShow = this._flowNodeInitialActive && chef.hamburger.activeInHierarchy;
+        if (flow.active === shouldShow) {
+            return;
+        }
+        flow.active = shouldShow;
+    }
+
+    private getFlowNode(): Node | null {
+        if (this.flowNode && this.flowNode.isValid) {
+            return this.flowNode;
+        }
+        if (this.node.children.length > 0) {
+            return this.node.children[0];
+        }
+        return null;
+    }
+
+    private resolveChefTarget(): ChefBehavior | null {
+        if (this.chefTarget && this.chefTarget.node && this.chefTarget.node.isValid) {
+            this._cachedChef = this.chefTarget;
+            return this.chefTarget;
+        }
+        if (this._cachedChef && this._cachedChef.node && this._cachedChef.node.isValid) {
+            return this._cachedChef;
+        }
+
+        const candidates: (Node | null)[] = [
+            this.targetNode,
+            this.node,
+            this.node ? this.node.parent : null,
+        ];
+
+        for (const candidate of candidates) {
+            let current = candidate;
+            while (current) {
+                const chef = current.getComponent(ChefBehavior);
+                if (chef) {
+                    this._cachedChef = chef;
+                    return chef;
+                }
+                current = current.parent;
+            }
+        }
+
+        return null;
     }
 }
