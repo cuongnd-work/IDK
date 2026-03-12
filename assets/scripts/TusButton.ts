@@ -83,8 +83,8 @@ export class TusButton extends Component {
     @property({ tooltip: 'Số lần click cần thiết worker' })
     public countWorkerMax: number = 3;
 
-    private readonly speedCostAmount: number = 100;
-    private readonly workerCostAmount: number = 250;
+    private readonly speedCostAmount: number = 5;
+    private readonly workerCostAmount: number = 15;
 
     private isB1Interact: boolean = true;
     private isB2Interact: boolean = false;
