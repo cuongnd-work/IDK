@@ -36,10 +36,18 @@ export class TusSliderHand extends Component {
 
     private startPosition: Vec3 = new Vec3();
     private handInitiallyActive: boolean = true;
+    @property({ tooltip: 'Thoi gian giu tay truoc khi keo (giay).' })
+    public pressDuration: number = 0.25;
+
+    @property({ tooltip: 'Ty le scale khi nhan tay.' })
+    public pressScale: number = 0.9;
+
     private moveTween: Tween<Node> | null = null;
     private opacityTween: Tween<UIOpacity> | null = null;
     private opacityComp: UIOpacity | null = null;
     private initialOpacity: number = 255;
+    private initialScale: Vec3 = new Vec3();
+    private pressScaleVec: Vec3 = new Vec3();
     private resumeScheduled: boolean = false;
     private touchNodes: Node[] = [];
     private sliderEventsRegistered: boolean = false;
@@ -51,6 +59,8 @@ export class TusSliderHand extends Component {
         }
         this.handInitiallyActive = this.handNode.active;
         this.handNode.getPosition(this.startPosition);
+        this.handNode.getScale(this.initialScale);
+        this.updatePressScaleVec();
         this.opacityComp = this.handNode.getComponent(UIOpacity) ?? this.handNode.addComponent(UIOpacity);
         this.initialOpacity = this.opacityComp.opacity;
     }
@@ -77,9 +87,6 @@ export class TusSliderHand extends Component {
         this.touchNodes = [];
         if (this.triggerButton) {
             this.addTouchNode(this.triggerButton.node);
-            this.triggerButton.node.on(NodeEventType.TOUCH_START, this.handleTargetTouchStart, this);
-            this.triggerButton.node.on(NodeEventType.TOUCH_END, this.handleTargetTouchEnd, this);
-            this.triggerButton.node.on(NodeEventType.TOUCH_CANCEL, this.handleTargetTouchEnd, this);
             this.triggerButton.node.on(Button.EventType.CLICK, this.handleButtonClicked, this);
             this.buttonRegistered = true;
         }
@@ -122,7 +129,10 @@ export class TusSliderHand extends Component {
             return;
         }
         this.stopLoop();
+        this.handNode.getScale(this.initialScale);
+        this.updatePressScaleVec();
         this.handNode.setPosition(this.startPosition);
+        this.handNode.setScale(this.initialScale);
         this.showHand(true);
         if (this.opacityComp) {
             this.opacityComp.opacity = 0;
@@ -131,23 +141,37 @@ export class TusSliderHand extends Component {
         const targetPos = new Vec3();
         Vec3.add(targetPos, this.startPosition, this.dragOffset);
 
+        const pressDuration = Math.max(0, this.pressDuration);
+        const halfPress = pressDuration * 0.5;
+        const pressScaleTarget = new Vec3(this.pressScaleVec.x, this.pressScaleVec.y, this.pressScaleVec.z);
+        const initialScaleTarget = new Vec3(this.initialScale.x, this.initialScale.y, this.initialScale.z);
+
+        const cycle = tween()
+            .call(() => {
+                this.handNode.setPosition(this.startPosition);
+                this.handNode.setScale(this.initialScale);
+                this.showHand(true);
+            });
+
+        if (pressDuration > 0) {
+            cycle
+                .to(halfPress, { scale: pressScaleTarget }, { easing: 'sineOut' })
+                .to(halfPress, { scale: initialScaleTarget }, { easing: 'sineIn' });
+        }
+
+        cycle
+            .to(this.sweepDuration, { position: targetPos }, { easing: 'sineInOut' })
+            .call(() => {
+                this.handNode.setPosition(this.startPosition);
+            })
+            .delay(this.pauseDuration);
+
         this.moveTween = tween(this.handNode)
-            .repeatForever(
-                tween()
-                    .call(() => {
-                        this.handNode.setPosition(this.startPosition);
-                        this.showHand(true);
-                    })
-                    .to(this.sweepDuration, { position: targetPos }, { easing: 'sineInOut' })
-                    .call(() => {
-                        this.handNode.setPosition(this.startPosition);
-                    })
-                    .delay(this.pauseDuration)
-            )
+            .repeatForever(cycle)
             .start();
 
         if (this.opacityComp) {
-            const fadeHold = Math.max(0, this.sweepDuration - this.fadeInDuration - this.fadeOutDuration);
+            const fadeHold = Math.max(0, this.sweepDuration + pressDuration - this.fadeInDuration - this.fadeOutDuration);
             this.opacityTween = tween(this.opacityComp)
                 .repeatForever(
                     tween()
@@ -179,6 +203,10 @@ export class TusSliderHand extends Component {
             return;
         }
         this.handNode.active = visible && this.handInitiallyActive;
+    }
+
+    private updatePressScaleVec(): void {
+        Vec3.multiplyScalar(this.pressScaleVec, this.initialScale, this.pressScale);
     }
 
     private addTouchNode(node: Node | null): void {
