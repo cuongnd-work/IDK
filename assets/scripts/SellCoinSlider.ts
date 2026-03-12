@@ -1,4 +1,4 @@
-import { _decorator, Component, Slider, Label, math, Button, Node } from 'cc';
+import { _decorator, Component, Slider, Label, math, Button, Node, NodeEventType } from 'cc';
 import { ChefBehavior } from 'db://assets/scripts/ChefBehavior';
 import { CountdownActivator } from 'db://assets/scripts/CountdownActivator';
 const { ccclass, property } = _decorator;
@@ -35,6 +35,9 @@ export class SellCoinSlider extends Component {
     @property(Node)
     public secondaryShowNode: Node = null;
 
+    @property({ type: Node, tooltip: 'Node se bat khi nguoi dung giu slider.' })
+    public sliderHoldNode: Node = null;
+
     @property({ type: ChefBehavior, tooltip: 'Chef chinh nhan coin.' })
     public chefTarget: ChefBehavior = null;
 
@@ -66,9 +69,11 @@ export class SellCoinSlider extends Component {
         this.registerSliderEvents();
         this.registerButtonEvents();
         this.refreshFromSlider();
+        this.setSliderHoldNodeActive(false);
     }
 
     protected onDisable(): void {
+        this.setSliderHoldNodeActive(false);
         this.unregisterSliderEvents();
         this.unregisterButtonEvents();
     }
@@ -91,6 +96,12 @@ export class SellCoinSlider extends Component {
             return;
         }
         this.slider.node.on('slide', this.handleSliderChanged, this);
+        const touchTargets = this.getSliderTouchTargets();
+        for (const target of touchTargets) {
+            target.on(NodeEventType.TOUCH_START, this.handleSliderPressed, this);
+            target.on(NodeEventType.TOUCH_END, this.handleSliderReleased, this);
+            target.on(NodeEventType.TOUCH_CANCEL, this.handleSliderReleased, this);
+        }
     }
 
     private registerButtonEvents(): void {
@@ -107,6 +118,12 @@ export class SellCoinSlider extends Component {
             return;
         }
         this.slider.node.off('slide', this.handleSliderChanged, this);
+        const touchTargets = this.getSliderTouchTargets();
+        for (const target of touchTargets) {
+            target.off(NodeEventType.TOUCH_START, this.handleSliderPressed, this);
+            target.off(NodeEventType.TOUCH_END, this.handleSliderReleased, this);
+            target.off(NodeEventType.TOUCH_CANCEL, this.handleSliderReleased, this);
+        }
     }
 
     private unregisterButtonEvents(): void {
@@ -152,6 +169,14 @@ export class SellCoinSlider extends Component {
         this.toggleNodePair(this.secondaryHideNode, this.secondaryShowNode);
     }
 
+    private handleSliderPressed(): void {
+        this.setSliderHoldNodeActive(true);
+    }
+
+    private handleSliderReleased(): void {
+        this.setSliderHoldNodeActive(false);
+    }
+
     private evaluateCoin(normalized: number): number {
         const [minValue, maxValue] = this.getRange();
         if (maxValue === minValue) {
@@ -186,6 +211,26 @@ export class SellCoinSlider extends Component {
         if (enableTarget) {
             enableTarget.active = true;
         }
+    }
+
+    private setSliderHoldNodeActive(active: boolean): void {
+        if (!this.sliderHoldNode) {
+            return;
+        }
+        this.sliderHoldNode.active = active;
+    }
+
+    private getSliderTouchTargets(): Node[] {
+        if (!this.slider) {
+            return [];
+        }
+        const targets: Node[] = [this.slider.node];
+        const handleSprite = this.slider.handle;
+        const handleNode = handleSprite ? handleSprite.node : null;
+        if (handleNode && handleNode !== this.slider.node && !targets.includes(handleNode)) {
+            targets.push(handleNode);
+        }
+        return targets;
     }
 
     private applyCoinValueToChef(): void {
