@@ -10,11 +10,18 @@ export class CatAnimationController extends Component {
     @property(OrderPopup)
     public orderPopup: OrderPopup = null;
 
+    @property({ type: Node, tooltip: 'Node se bi tat khi dang Bedo va bat lai voi cac trang thai khac.' })
+    public bedoToggleNode: Node = null;
+
     private animationSpeedMultiplier = 1;
     private currentClip: string | null = null;
+    private bedoNodeInitiallyActive = true;
 
     protected onLoad (): void {
         this.resolveOrderPopup();
+        if (this.bedoToggleNode) {
+            this.bedoNodeInitiallyActive = this.bedoToggleNode.active;
+        }
     }
 
     public sellTargetPopup: OrderPopup | null = null;
@@ -28,6 +35,7 @@ export class CatAnimationController extends Component {
     }
 
     public doIdle (): void {
+        this.setBedoNodeActive(false);
         this.playClip('Idle');
     }
 
@@ -41,14 +49,17 @@ export class CatAnimationController extends Component {
             this.sellTargetPopup.sell();
         }
 
+        this.setBedoNodeActive(false);
         this.playClip('Run');
     }
 
     public doBedo (): void {
+        this.setBedoNodeActive(false);
         this.playClip('Bedo');
     }
 
     public doDoing (): void {
+        this.setBedoNodeActive(true);
         this.playClip('DapBua');
     }
 
@@ -82,6 +93,17 @@ export class CatAnimationController extends Component {
         if (state) {
             state.speed = this.animationSpeedMultiplier;
         }
+    }
+
+    private setBedoNodeActive(enable: boolean): void {
+        if (!this.bedoToggleNode) {
+            return;
+        }
+        const shouldBeActive = enable && this.bedoNodeInitiallyActive;
+        if (this.bedoToggleNode.active === shouldBeActive) {
+            return;
+        }
+        this.bedoToggleNode.active = shouldBeActive;
     }
 }
 
