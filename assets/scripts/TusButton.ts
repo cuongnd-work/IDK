@@ -219,7 +219,7 @@ export class TusButton extends Component {
             return;
         }
 
-        target.applySpeedBoost(0.15);
+        target.applySpeedBoost(0.10);
     }
 
     private setChefSpeedNodesActive(active: boolean): void {
