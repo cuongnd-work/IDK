@@ -46,6 +46,9 @@ export class TusButton extends Component {
     @property(Node)
     public handTarget2: Node = null!;
 
+    @property({ type: [Node], tooltip: 'Node bai len cho tung Chef sau khi nang cap speed (thu tu giong danh sach Chef).' })
+    public chefSpeedNodes: Node[] = [];
+
     @property(Node)
     public end: Node = null!;
 
@@ -114,6 +117,7 @@ export class TusButton extends Component {
 
         this.workerClicked = false;
         this.isWorkerActive = false;
+        this.setChefSpeedNodesActive(false);
 
         this.setButtonInteractable(this.buttonSpeed, false);
         this.setButtonInteractable(this.buttonWorker, true);
@@ -141,6 +145,7 @@ export class TusButton extends Component {
         this._count++;
         this.applySpeedBoost(this.chefBehavior);
         this.applySpeedBoost(this.chefWorkerBehavior);
+        this.setChefSpeedNodesActive(true);
 
         if (this.isWorkerActive)
         {
@@ -215,6 +220,18 @@ export class TusButton extends Component {
         }
 
         target.applySpeedBoost(0.15);
+    }
+
+    private setChefSpeedNodesActive(active: boolean): void {
+        if (!this.chefSpeedNodes) {
+            return;
+        }
+        for (const node of this.chefSpeedNodes) {
+            if (!node) {
+                continue;
+            }
+            node.active = active;
+        }
     }
 
     /* ================= UTILS ================= */
