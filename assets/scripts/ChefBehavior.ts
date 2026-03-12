@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3, Quat, Mat4 } from 'cc';
+import { _decorator, Component, Node, Vec3, Quat, Mat4, EventHandler } from 'cc';
 import { CatAnimationController } from './CatAnimationController';
 import { CustomersQueueManager } from 'db://assets/scripts/customers/CustomersQueueManager';
 import { CustomersQueueEvent, CustomersQueueEvents } from 'db://assets/scripts/customers/CustomersQueueEvents';
@@ -24,6 +24,8 @@ export class ChefBehavior extends Component {
 
     @property(Node)
     pointB: Node = null!;
+
+    private pointBListeners: Array<{ cb: (chef: ChefBehavior) => void; target?: unknown }> = [];
 
     /* ================= MOVE ================= */
 
@@ -431,10 +433,37 @@ export class ChefBehavior extends Component {
 
     private onReachTarget (): void {
         if (this._state === ChefState.MoveWithBedo) {
+            this.emitPointBReached();
             this.waitAtPointB();
         }
         else if (this._state === ChefState.MoveWithWalk) {
             this.enterDoing();
         }
+    }
+
+    private emitPointBReached(): void {
+        if (!this.pointBListeners || this.pointBListeners.length === 0) {
+            return;
+        }
+        for (const entry of this.pointBListeners) {
+            if (!entry || typeof entry.cb !== 'function') {
+                continue;
+            }
+            entry.cb.call(entry.target, this);
+        }
+    }
+
+    public registerPointBListener(callback: (chef: ChefBehavior) => void, target?: unknown): void {
+        if (!callback) {
+            return;
+        }
+        this.pointBListeners.push({ cb: callback, target });
+    }
+
+    public unregisterPointBListener(callback: (chef: ChefBehavior) => void, target?: unknown): void {
+        if (!callback || !this.pointBListeners) {
+            return;
+        }
+        this.pointBListeners = this.pointBListeners.filter(entry => entry.cb !== callback || entry.target !== target);
     }
 }
