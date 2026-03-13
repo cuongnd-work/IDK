@@ -1,7 +1,7 @@
 ﻿export class constant {
     static STORE_LINK = {
-        ANDROID_LINK: 'https://play.google.com/store/apps/details?id=com.archer.cat.kitchen',
-        IOS_LINK: 'https://play.google.com/store/apps/details?id=com.archer.cat.kitchen',
+        ANDROID_LINK: 'https://play.google.com/store/apps/details?id=com.archer.idle.dungeon.keeper.tycoon.rpg',
+        IOS_LINK: 'https://play.google.com/store/apps/details?id=com.archer.idle.dungeon.keeper.tycoon.rpg',
     }
 
     static AUDIO_NAME = {
@@ -14,8 +14,8 @@
     }
 
     static TRACKING = {
-        PROJECT_ID: "Game05",
-        PLAYABLE_ID: "PA0003"
+        PROJECT_ID: "com.archer.idle.dungeon.keeper.tycoon.rpg",
+        PLAYABLE_ID: "PA0001"
     }
 
     static EFFECT_NAME = {
