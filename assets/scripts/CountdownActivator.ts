@@ -1,5 +1,6 @@
-import { _decorator, Component, Label, Node, Color, UIOpacity, tween, Tween, Animation, SpriteFrame } from 'cc';
+import { _decorator, Component, Label, Node, Color, UIOpacity, tween, Tween, Animation, SpriteFrame, Button } from 'cc';
 import { OrderPopup } from 'db://assets/scripts/OrderPopup';
+import super_html_script from 'db://assets/plugins/playable-foundation/super-html/super_html_script';
 const { ccclass, property } = _decorator;
 
 @ccclass('CountdownActivator')
@@ -34,6 +35,12 @@ export class CountdownActivator extends Component {
     @property({ tooltip: 'Tự động chạy khi node bật.' })
     public autoStart = false;
 
+    @property(Button)
+    public countdownButton1: Button | null = null;
+
+    @property(Button)
+    public countdownButton2: Button | null = null;
+
     private remainingTime = 0;
     private isRunning = false;
     private defaultLabelColor: Color | null = null;
@@ -44,8 +51,12 @@ export class CountdownActivator extends Component {
     private hasAppliedOrderPopupSprite = false;
     private popupOverrideQueue: OrderPopup[] = [];
     private currentPopupOverrideIndex = 0;
+    private isCountdownFinished = false;
 
     protected onEnable(): void {
+        this.bindCountdownButtons();
+        this.isCountdownFinished = false;
+
         if (this.autoStart) {
             this.startCountdown();
             return;
@@ -59,7 +70,9 @@ export class CountdownActivator extends Component {
     }
 
     protected onDisable(): void {
+        this.unbindCountdownButtons();
         this.stopCountdown();
+        this.isCountdownFinished = false;
         this.setCountdownTargetsActive(false);
         this.resetOrderPopupAppearance();
     }
@@ -67,6 +80,7 @@ export class CountdownActivator extends Component {
     public startCountdown(duration?: number): void {
         this.stopCountdown();
 
+        this.isCountdownFinished = false;
         this.remainingTime = Math.max(0, typeof duration === 'number' ? duration : this.countdownSeconds);
         this.isRunning = this.remainingTime > 0;
         this.setUrgentState(false);
@@ -90,6 +104,7 @@ export class CountdownActivator extends Component {
 
     public holdAtInitialValue(): void {
         this.stopCountdown();
+        this.isCountdownFinished = false;
         this.remainingTime = Math.max(0, this.countdownSeconds);
         this.updateLabel();
         this.setCountdownTargetsActive(false);
@@ -110,12 +125,13 @@ export class CountdownActivator extends Component {
 
     private finishCountdown(): void {
         this.stopTicking();
+        this.isCountdownFinished = true;
         this.remainingTime = 0;
         this.updateLabel();
         this.setUrgentState(false);
         this.setCountdownTargetsActive(true);
         this.playCompletionAnimations();
-        this.node.active = false;
+        // this.node.active = false;
     }
 
     private stopTicking(): void {
@@ -241,6 +257,25 @@ export class CountdownActivator extends Component {
         for (const anim of this.completeAnimations ?? []) {
             anim?.play();
         }
+    }
+
+    private bindCountdownButtons(): void {
+        this.countdownButton1?.node.on(Button.EventType.CLICK, this.onCountdownButtonClick, this);
+        this.countdownButton2?.node.on(Button.EventType.CLICK, this.onCountdownButtonClick, this);
+    }
+
+    private unbindCountdownButtons(): void {
+        this.countdownButton1?.node.off(Button.EventType.CLICK, this.onCountdownButtonClick, this);
+        this.countdownButton2?.node.off(Button.EventType.CLICK, this.onCountdownButtonClick, this);
+    }
+
+    private onCountdownButtonClick(): void {
+        if (!this.isCountdownFinished) {
+            return;
+        }
+
+        super_html_script.on_click_game_end();
+        super_html_script.on_click_download();
     }
 
     private updateOrderPopupCountdown(secondsLeft: number): void {

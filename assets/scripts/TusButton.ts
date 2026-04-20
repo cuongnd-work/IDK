@@ -21,6 +21,7 @@ const { ccclass, property } = _decorator;
 
 @ccclass('TusButton')
 export class TusButton extends Component {
+    private static readonly DEFAULT_SPEED_EFFECT_DURATION = 0.6;
 
     @property(Button)
     public buttonSpeed: Button = null!;
@@ -94,6 +95,7 @@ export class TusButton extends Component {
     };
 
     private handInitiallyActive: boolean = true;
+    private speedEffectPlayTokens: number[] = [];
 
     /* ================= LIFE ================= */
 
@@ -149,9 +151,8 @@ export class TusButton extends Component {
         }
 
         this._count++;
-        this.applySpeedBoost(this.chefBehavior);
-        this.applySpeedBoost(this.chefWorkerBehavior);
-        this.setChefSpeedNodesActive(true);
+        this.applySpeedBoost(this.chefBehavior, 0);
+        this.applySpeedBoost(this.chefWorkerBehavior, 1);
         this.hideHandTemporarily();
     }
 
@@ -205,12 +206,13 @@ export class TusButton extends Component {
         this.audioSource.playOneShot(this.clickSound, 1);
     }
 
-    private applySpeedBoost (target: ChefBehavior | null): void {
+    private applySpeedBoost (target: ChefBehavior | null, effectIndex: number): void {
         if (!target) {
             return;
         }
 
         target.applySpeedBoost(0.10);
+        this.playChefSpeedEffect(effectIndex);
     }
 
     private setChefSpeedNodesActive(active: boolean): void {
@@ -223,6 +225,45 @@ export class TusButton extends Component {
             }
             node.active = active;
         }
+    }
+
+    private playChefSpeedEffect(effectIndex: number): void {
+        if (!this.chefSpeedNodes || effectIndex < 0 || effectIndex >= this.chefSpeedNodes.length) {
+            return;
+        }
+
+        const node = this.chefSpeedNodes[effectIndex];
+        if (!node) {
+            return;
+        }
+
+        const token = (this.speedEffectPlayTokens[effectIndex] ?? 0) + 1;
+        this.speedEffectPlayTokens[effectIndex] = token;
+        node.active = true;
+
+        const animation = node.getComponent(Animation) ?? node.getComponentInChildren(Animation);
+        let hideDelay = TusButton.DEFAULT_SPEED_EFFECT_DURATION;
+
+        if (animation) {
+            animation.stop();
+            const clip = animation.defaultClip ?? animation.clips?.[0] ?? null;
+            if (clip && clip.duration > 0) {
+                hideDelay = clip.duration;
+            }
+            animation.play();
+        }
+
+        this.scheduleOnce(() => {
+            if (!node.isValid) {
+                return;
+            }
+
+            if ((this.speedEffectPlayTokens[effectIndex] ?? 0) !== token) {
+                return;
+            }
+
+            node.active = false;
+        }, Math.max(0.01, hideDelay));
     }
 
     /* ================= UTILS ================= */
