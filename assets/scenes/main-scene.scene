@@ -3740,6 +3740,8 @@
       "__id__": 807
     },
     "columnIndex": -1,
+    "waitForCustomerInitialPlacement": true,
+    "forgeContinuouslyWithoutDelivery": true,
     "_id": "97As+PTj9FhI/45reAhIa3"
   },
   {
@@ -3773,9 +3775,9 @@
     "_prefab": null,
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 0.088,
+      "x": -0.112,
       "y": 0,
-      "z": 2.916
+      "z": 3.416
     },
     "_lrot": {
       "__type__": "cc.Quat",
@@ -18757,6 +18759,8 @@
       "__id__": 807
     },
     "columnIndex": -1,
+    "waitForCustomerInitialPlacement": true,
+    "forgeContinuouslyWithoutDelivery": true,
     "_id": "3bJCEybGBPMYjcv7BeMDKI"
   },
   {
@@ -22053,7 +22057,7 @@
       }
     ],
     "_defaultClip": null,
-    "_useBakedAnimation": true,
+    "_useBakedAnimation": false,
     "_sockets": [],
     "_id": "a0wjxEaP5CMJVr2HuxTHET"
   },
@@ -23397,10 +23401,7 @@
     "hammerAudioSource": {
       "__id__": 87
     },
-    "hammerSound": {
-      "__uuid__": "3a5cbf4e-6304-444d-aeb8-c747934cf375",
-      "__expectedType__": "cc.AudioClip"
-    },
+    "hammerSound": null,
     "hammerSoundInitialDelay": 0.2,
     "hammerSoundInterval": 0.8,
     "hammerSoundVolume": 1,
@@ -26874,7 +26875,7 @@
         "__id__": 1205
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 1207

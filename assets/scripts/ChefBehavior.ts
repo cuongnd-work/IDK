@@ -8,6 +8,9 @@ import { CurrencyView } from 'db://assets/scripts/CurrencyView';
 const { ccclass, property } = _decorator;
 
 enum ChefState {
+    IdleBeforeCustomerPlacement,
+    MoveToForge,
+    ForgingLoop,
     Doing,
     MoveWithBedo,
     WaitAtPointB,
@@ -69,6 +72,12 @@ export class ChefBehavior extends Component {
     @property({ tooltip: 'Chỉ số hàng mèo mà đầu bếp phục vụ. Đặt -1 để tự động lấy theo mèo đầu tiên.' })
     columnIndex = -1;
 
+    @property({ tooltip: 'Dung idle cho den khi customer di chuyen vao hang xong.' })
+    public waitForCustomerInitialPlacement = true;
+
+    @property({ tooltip: 'Sau khi vao vi tri ren thi chi ren lien tuc, khong be do sang pointB.' })
+    public forgeContinuouslyWithoutDelivery = true;
+
     /* ================= INTERNAL ================= */
 
     private _state: ChefState = ChefState.Doing;
@@ -97,18 +106,23 @@ export class ChefBehavior extends Component {
 
     protected onDestroy (): void {
         CustomersQueueEvents.off(CustomersQueueEvent.ORDER_COMPLETED, this.onCustomerOrderCompleted, this);
+        this.queueManager?.unregisterAfterInitialPlacement(this.handleInitialCustomerPlacementComplete, this);
     }
 
     start (): void {
         this._groundY = this.node.worldPosition.y;
-
-        this._currentTarget = this.pointA;
-        this.enterDoing();
         this.hamburger.active = false;
+        this.coin.active = false;
         this.resolveQueueManagerReference();
-        this.resolveColumnFromCurrentCustomer();
-        this.assignFrontCustomer();
         this.syncSpeedDependents();
+
+        if (this.shouldWaitForInitialCustomerPlacement()) {
+            this.enterIdleBeforeCustomerPlacement();
+            this.queueManager?.registerAfterInitialPlacement(this.handleInitialCustomerPlacementComplete, this);
+            return;
+        }
+
+        this.startWorkingFlow();
     }
 
     update (dt: number): void {
@@ -118,13 +132,66 @@ export class ChefBehavior extends Component {
 
         if (
             this._state === ChefState.MoveWithBedo ||
-            this._state === ChefState.MoveWithWalk
+            this._state === ChefState.MoveWithWalk ||
+            this._state === ChefState.MoveToForge
         ) {
             this.move3D(dt);
         }
     }
 
     /* ================= STATE ================= */
+
+    private shouldWaitForInitialCustomerPlacement (): boolean {
+        return this.waitForCustomerInitialPlacement &&
+            !!this.queueManager &&
+            !this.queueManager.hasStartedAfterInitialPlacement;
+    }
+
+    private handleInitialCustomerPlacementComplete = (): void => {
+        this.startWorkingFlow();
+    };
+
+    private startWorkingFlow (): void {
+        this.queueManager?.unregisterAfterInitialPlacement(this.handleInitialCustomerPlacementComplete, this);
+
+        if (this.forgeContinuouslyWithoutDelivery) {
+            this.moveToForgeAndLoop();
+            return;
+        }
+
+        this._currentTarget = this.pointA;
+        this.resolveColumnFromCurrentCustomer();
+        this.assignFrontCustomer();
+        this.enterDoing();
+    }
+
+    private enterIdleBeforeCustomerPlacement (): void {
+        this._state = ChefState.IdleBeforeCustomerPlacement;
+        this.hamburger.active = false;
+        this.coin.active = false;
+        this.animCtrl?.doIdle();
+    }
+
+    private moveToForgeAndLoop (): void {
+        this.hamburger.active = false;
+        this.coin.active = false;
+        this._currentTarget = this.pointA;
+
+        if (this.isAtTarget(this.pointA)) {
+            this.enterForgingLoop();
+            return;
+        }
+
+        this._state = ChefState.MoveToForge;
+        this.animCtrl?.doRun();
+    }
+
+    private enterForgingLoop (): void {
+        this._state = ChefState.ForgingLoop;
+        this.hamburger.active = false;
+        this.coin.active = false;
+        this.animCtrl?.doDoing();
+    }
 
     private enterDoing (): void {
         const provider = MoveTargetProvider.instance;
@@ -432,13 +499,27 @@ export class ChefBehavior extends Component {
     /* ================= TARGET ================= */
 
     private onReachTarget (): void {
-        if (this._state === ChefState.MoveWithBedo) {
+        if (this._state === ChefState.MoveToForge) {
+            this.enterForgingLoop();
+        }
+        else if (this._state === ChefState.MoveWithBedo) {
             this.emitPointBReached();
             this.waitAtPointB();
         }
         else if (this._state === ChefState.MoveWithWalk) {
             this.enterDoing();
         }
+    }
+
+    private isAtTarget (target: Node | null): boolean {
+        if (!target) {
+            return true;
+        }
+
+        const pos = this.node.worldPosition;
+        target.getWorldPosition(this._targetPos);
+        this._targetPos.y = pos.y;
+        return Vec3.squaredDistance(pos, this._targetPos) <= this.stopDistance * this.stopDistance;
     }
 
     private emitPointBReached(): void {

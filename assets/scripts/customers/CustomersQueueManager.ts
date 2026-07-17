@@ -76,6 +76,7 @@ export class CustomersQueueManager extends Component {
     private _entryLookup = new Map<string, QueueEntry>();
     private _columnAdvanceMultipliers = new Map<number, number>();
     private _hasStartedAfterInitialPlacement = false;
+    private _afterInitialPlacementListeners: Array<{ cb: () => void; target?: unknown }> = [];
 
     onLoad (): void {
         CustomersQueueEvents.on(CustomersQueueEvent.ORDER_COMPLETED, this.onOrderCompleted, this);
@@ -92,6 +93,34 @@ export class CustomersQueueManager extends Component {
 
     onDestroy (): void {
         CustomersQueueEvents.off(CustomersQueueEvent.ORDER_COMPLETED, this.onOrderCompleted, this);
+        this._afterInitialPlacementListeners.length = 0;
+    }
+
+    public get hasStartedAfterInitialPlacement (): boolean {
+        return this._hasStartedAfterInitialPlacement;
+    }
+
+    public registerAfterInitialPlacement(callback: () => void, target?: unknown): void {
+        if (!callback) {
+            return;
+        }
+
+        if (this._hasStartedAfterInitialPlacement) {
+            callback.call(target);
+            return;
+        }
+
+        this._afterInitialPlacementListeners.push({ cb: callback, target });
+    }
+
+    public unregisterAfterInitialPlacement(callback: () => void, target?: unknown): void {
+        if (!callback || !this._afterInitialPlacementListeners) {
+            return;
+        }
+
+        this._afterInitialPlacementListeners = this._afterInitialPlacementListeners.filter((entry) => {
+            return entry.cb !== callback || entry.target !== target;
+        });
     }
 
     private buildQueues (): void {
@@ -419,6 +448,19 @@ export class CustomersQueueManager extends Component {
         this.setStartEnableNodes(true);
         this.setStartEnableComponents(true);
         this.startCountdowns();
+        this.emitAfterInitialPlacement();
+    }
+
+    private emitAfterInitialPlacement (): void {
+        const listeners = [...this._afterInitialPlacementListeners];
+        this._afterInitialPlacementListeners.length = 0;
+
+        for (const entry of listeners) {
+            if (!entry || typeof entry.cb !== 'function') {
+                continue;
+            }
+            entry.cb.call(entry.target);
+        }
     }
 
     private setStartEnableNodes(active: boolean): void {
