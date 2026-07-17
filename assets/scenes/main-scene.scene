@@ -3648,7 +3648,7 @@
       "__id__": 96
     },
     "chefWorkerBehavior": {
-      "__id__": 921
+      "__id__": 923
     },
     "handTarget": {
       "__id__": 83
@@ -4677,6 +4677,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "34oRVL2SRHxaLfoGqBHIFX"
   },
   {
@@ -5197,6 +5213,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "a5ri+YA/tPAZCwbt2/fENh"
   },
   {
@@ -6302,6 +6334,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "97Dju8Lg9KfavVeobfcN1k"
   },
   {
@@ -6788,6 +6836,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "59MtgBHs9HKLattwRN1N1F"
   },
   {
@@ -7274,6 +7338,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "98GvrCYNhC3aC7X9YQEVKT"
   },
   {
@@ -7778,6 +7858,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "46wpKtaEVDjJSR+c02BTA1"
   },
   {
@@ -8298,6 +8394,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "91i+rxo2hBVZI1whRhiq4E"
   },
   {
@@ -8931,6 +9043,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "834D7N6YJBjJHlbOAj7Ycx"
   },
   {
@@ -9564,6 +9692,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "6aLAbmm0JBR5Xb7PgAqU8t"
   },
   {
@@ -10084,6 +10228,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "aaiZJ+9tRB0Jfce9142EZU"
   },
   {
@@ -10588,6 +10748,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "35yrT57ZFA2qq+6LO9O9Ak"
   },
   {
@@ -11074,6 +11250,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "f8vQTfO29PupNzCCKNpVwx"
   },
   {
@@ -11560,6 +11752,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "bcrYNZPLhDwZNQIWnNyEZH"
   },
   {
@@ -12064,6 +12272,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "d8/F4aRvpOC7OFf8FoEJkZ"
   },
   {
@@ -12584,6 +12808,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "ddSxe1XT1GdK3hfZQvbY9x"
   },
   {
@@ -13217,6 +13457,22 @@
     "animation": null,
     "orderPopup": null,
     "bedoToggleNode": null,
+    "hammerAudioSource": null,
+    "hammerSound": null,
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": null,
+    "hammerVfxSpawnPoint": null,
+    "hammerVfxParent": null,
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "c5pYJFE8NP97nOnEfLW8eK"
   },
   {
@@ -13325,7 +13581,7 @@
         "__id__": 771
       },
       {
-        "__id__": 922
+        "__id__": 921
       },
       {
         "__id__": 924
@@ -13392,7 +13648,7 @@
         "__id__": 920
       },
       {
-        "__id__": 921
+        "__id__": 923
       }
     ],
     "_prefab": null,
@@ -17815,45 +18071,35 @@
     "bedoToggleNode": {
       "__id__": 815
     },
+    "hammerAudioSource": {
+      "__id__": 87
+    },
+    "hammerSound": {
+      "__uuid__": "3a5cbf4e-6304-444d-aeb8-c747934cf375",
+      "__expectedType__": "cc.AudioClip"
+    },
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": {
+      "__uuid__": "0537abe1-92a4-458e-9c9f-86d240a3c678",
+      "__expectedType__": "cc.Prefab"
+    },
+    "hammerVfxSpawnPoint": {
+      "__id__": 921
+    },
+    "hammerVfxParent": {
+      "__id__": 921
+    },
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.6666666666666666,
     "_id": "12JI1JPNZEo7/ZCPwGKZT7"
-  },
-  {
-    "__type__": "3b88ccxLrNMzLWpWFRE6LZT",
-    "_name": "",
-    "_objFlags": 0,
-    "__editorExtras__": {},
-    "node": {
-      "__id__": 771
-    },
-    "_enabled": true,
-    "__prefab": null,
-    "pointA": {
-      "__id__": 922
-    },
-    "pointB": {
-      "__id__": 924
-    },
-    "speed": 1,
-    "currentSpeed": 1,
-    "stopDistance": 0.1,
-    "pointAWaitSeconds": 2.6,
-    "pointBWaitSeconds": 0.15,
-    "rotationOffsetY": 0,
-    "hamburger": {
-      "__id__": 844
-    },
-    "coin": {
-      "__id__": 915
-    },
-    "baseSellCoinReward": 50,
-    "animCtrl": {
-      "__id__": 920
-    },
-    "queueManager": {
-      "__id__": 769
-    },
-    "columnIndex": -1,
-    "_id": "3bJCEybGBPMYjcv7BeMDKI"
   },
   {
     "__type__": "cc.Node",
@@ -17867,7 +18113,7 @@
     "_active": true,
     "_components": [
       {
-        "__id__": 923
+        "__id__": 922
       }
     ],
     "_prefab": null,
@@ -17906,7 +18152,7 @@
     "_objFlags": 0,
     "__editorExtras__": {},
     "node": {
-      "__id__": 922
+      "__id__": 921
     },
     "_enabled": true,
     "__prefab": null,
@@ -17921,6 +18167,44 @@
       "y": 0.5
     },
     "_id": "d6wbXssVpNUq8f5Ykld6P+"
+  },
+  {
+    "__type__": "3b88ccxLrNMzLWpWFRE6LZT",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 771
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "pointA": {
+      "__id__": 921
+    },
+    "pointB": {
+      "__id__": 924
+    },
+    "speed": 1,
+    "currentSpeed": 1,
+    "stopDistance": 0.1,
+    "pointAWaitSeconds": 2.6,
+    "pointBWaitSeconds": 0.15,
+    "rotationOffsetY": 0,
+    "hamburger": {
+      "__id__": 844
+    },
+    "coin": {
+      "__id__": 915
+    },
+    "baseSellCoinReward": 50,
+    "animCtrl": {
+      "__id__": 920
+    },
+    "queueManager": {
+      "__id__": 769
+    },
+    "columnIndex": -1,
+    "_id": "3bJCEybGBPMYjcv7BeMDKI"
   },
   {
     "__type__": "cc.Node",
@@ -21216,7 +21500,7 @@
       }
     ],
     "_defaultClip": null,
-    "_useBakedAnimation": true,
+    "_useBakedAnimation": false,
     "_sockets": [],
     "_id": "a0wjxEaP5CMJVr2HuxTHET"
   },
@@ -22557,6 +22841,34 @@
     "bedoToggleNode": {
       "__id__": 974
     },
+    "hammerAudioSource": {
+      "__id__": 87
+    },
+    "hammerSound": {
+      "__uuid__": "3a5cbf4e-6304-444d-aeb8-c747934cf375",
+      "__expectedType__": "cc.AudioClip"
+    },
+    "hammerSoundInitialDelay": 0.2,
+    "hammerSoundInterval": 0.8,
+    "hammerSoundVolume": 1,
+    "hammerVfxPrefab": {
+      "__uuid__": "0537abe1-92a4-458e-9c9f-86d240a3c678",
+      "__expectedType__": "cc.Prefab"
+    },
+    "hammerVfxSpawnPoint": {
+      "__id__": 973
+    },
+    "hammerVfxParent": {
+      "__id__": 973
+    },
+    "hammerVfxOffset": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "hammerVfxLifetime": 1,
+    "hammerVfxSpawnRatio": 0.4,
     "_id": "d4eD6jnddMXo8ktXfj1yHa"
   },
   {
@@ -23486,7 +23798,7 @@
     "_enabled": true,
     "__prefab": null,
     "chefTarget": {
-      "__id__": 921
+      "__id__": 923
     },
     "targetNode": {
       "__id__": 771
@@ -23677,7 +23989,7 @@
     },
     "additionalChefTargets": [
       {
-        "__id__": 921
+        "__id__": 923
       }
     ],
     "lockChefsUntilConfirm": true,
@@ -27134,7 +27446,7 @@
     "_enabled": true,
     "__prefab": null,
     "chef": {
-      "__id__": 921
+      "__id__": 923
     },
     "uiPrefab": {
       "__uuid__": "25a1b6e9-b61c-4253-9098-705835f2efe4",
