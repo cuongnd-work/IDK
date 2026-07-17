@@ -5,6 +5,8 @@ import {
     Sprite,
     Node,
     Vec3,
+    tween,
+    Tween,
     AudioSource,
     AudioClip,
     Prefab,
@@ -34,6 +36,18 @@ export class TusButton extends Component {
 
     @property({ tooltip: 'Thoi gian (giay) khong tuong tac truoc khi hien lai hand.' })
     public handReappearDelay: number = 3;
+
+    @property({ tooltip: 'Thoi gian hand di chuyen giua 2 button.' })
+    public handMoveDuration: number = 0.55;
+
+    @property({ tooltip: 'Thoi gian hand dung lai o moi button truoc khi di tiep.' })
+    public handPauseDuration: number = 0.25;
+
+    @property({ tooltip: 'Scale button khi hand di den.' })
+    public handButtonBounceScale: number = 1.12;
+
+    @property({ tooltip: 'Thoi gian moi nhip nay cua button.' })
+    public handButtonBounceDuration: number = 0.12;
 
     @property(ChefBehavior)
     public chefBehavior: ChefBehavior = null!;
@@ -87,15 +101,17 @@ export class TusButton extends Component {
     private readonly speedCostAmount: number = 5;
     private readonly workerCostAmount: number = 15;
 
-    private isB1Interact: boolean = true;
-    private isB2Interact: boolean = false;
-
     private readonly currencyChangeHandler = () => {
         this.refreshButtonAvailability();
     };
 
     private handInitiallyActive: boolean = true;
     private speedEffectPlayTokens: number[] = [];
+    private handLoopTween: Tween<Node> | null = null;
+    private buttonSpeedBounceTween: Tween<Node> | null = null;
+    private buttonWorkerBounceTween: Tween<Node> | null = null;
+    private readonly buttonSpeedInitialScale = new Vec3();
+    private readonly buttonWorkerInitialScale = new Vec3();
 
     /* ================= LIFE ================= */
 
@@ -103,29 +119,27 @@ export class TusButton extends Component {
         if (this.hand) {
             this.handInitiallyActive = this.hand.active;
         }
+        this.buttonSpeed?.node.getScale(this.buttonSpeedInitialScale);
+        this.buttonWorker?.node.getScale(this.buttonWorkerInitialScale);
     }
 
     start () {
-        this.buttonSpeed.node.on(Button.EventType.CLICK, this.ButtonSpeedClicker, this);
-        this.buttonWorker.node.on(Button.EventType.CLICK, this.ButtonWorkerClicker, this);
-
         this.zoom_button1.stopZoomAndReset();
-        this.zoom_button2.startZoom();
+        this.zoom_button2.stopZoomAndReset();
 
-        this.setSpriteAlpha(this.zoom_button1.node, 100);
+        this.setSpriteAlpha(this.zoom_button1.node, 255);
         this.setSpriteAlpha(this.zoom_button2.node, 255);
 
-        this.hand.position = this.handTarget ? this.handTarget.position : this.hand.position;
+        if (this.hand && this.handTarget2) {
+            this.hand.setPosition(this.handTarget2.position);
+        }
 
         this.workerClicked = false;
-        this.isWorkerActive = false;
         this.setChefSpeedNodesActive(false);
-
-        this.setButtonInteractable(this.buttonSpeed, false);
-        this.setButtonInteractable(this.buttonWorker, true);
 
         CurrencyView.onCurrencyChanged(this.currencyChangeHandler, this);
         this.refreshButtonAvailability();
+        this.startHandLoop();
     }
 
     public isCompleted: boolean = false;
@@ -134,10 +148,6 @@ export class TusButton extends Component {
 
     public ButtonSpeedClicker (): void {
         if(this.isCompleted) return;
-
-        if (!this.isWorkerActive) {
-            return;
-        }
 
         if(!CurrencyView.instance.trySubtractCurrency(this.speedCostAmount)) return;
 
@@ -156,7 +166,6 @@ export class TusButton extends Component {
         this.hideHandTemporarily();
     }
 
-    private isWorkerActive: boolean = false;
     private workerClicked: boolean = false;
 
     @property(Node)
@@ -177,19 +186,12 @@ export class TusButton extends Component {
             this.worker.active = true;
         }
 
+        this.zoom_button1.stopZoomAndReset();
         this.zoom_button2.stopZoomAndReset();
-        this.zoom_button1.startZoom();
 
-        this.setSpriteAlpha(this.zoom_button2.node, 100);
+        this.setSpriteAlpha(this.zoom_button2.node, 255);
         this.setSpriteAlpha(this.zoom_button1.node, 255);
 
-        this.setButtonInteractable(this.buttonWorker, false);
-
-        this.setButtonInteractable(this.buttonSpeed, true);
-
-        this.hand.position = this.handTarget2 ? this.handTarget2.position : this.hand.position;
-
-        this.isWorkerActive = true;
         if (!this.handInitiallyActive) {
             this.restoreHandVisibility();
         } else {
@@ -266,6 +268,86 @@ export class TusButton extends Component {
         }, Math.max(0.01, hideDelay));
     }
 
+    private startHandLoop(): void {
+        if (!this.hand || !this.handTarget || !this.handTarget2 || !this.handInitiallyActive) {
+            return;
+        }
+
+        this.stopHandLoop();
+        this.hand.active = true;
+
+        const button1Position = this.handTarget2.position.clone();
+        const button2Position = this.handTarget.position.clone();
+        this.hand.setPosition(button1Position);
+        this.playHandButtonBounce(this.buttonSpeed?.node ?? null, true);
+
+        this.handLoopTween = tween(this.hand)
+            .repeatForever(
+                tween<Node>()
+                    .delay(Math.max(0, this.handPauseDuration))
+                    .to(Math.max(0.01, this.handMoveDuration), { position: button2Position.clone() }, { easing: 'sineInOut' })
+                    .call(() => this.playHandButtonBounce(this.buttonWorker?.node ?? null, false))
+                    .delay(Math.max(0, this.handPauseDuration))
+                    .to(Math.max(0.01, this.handMoveDuration), { position: button1Position.clone() }, { easing: 'sineInOut' })
+                    .call(() => this.playHandButtonBounce(this.buttonSpeed?.node ?? null, true))
+            )
+            .start();
+    }
+
+    private stopHandLoop(resetButtons: boolean = true): void {
+        if (this.handLoopTween) {
+            this.handLoopTween.stop();
+            this.handLoopTween = null;
+        }
+
+        this.stopHandButtonBounce(this.buttonSpeed?.node ?? null, true, resetButtons);
+        this.stopHandButtonBounce(this.buttonWorker?.node ?? null, false, resetButtons);
+    }
+
+    private playHandButtonBounce(buttonNode: Node | null, isSpeedButton: boolean): void {
+        if (!buttonNode) {
+            return;
+        }
+
+        this.stopHandButtonBounce(buttonNode, isSpeedButton, true);
+
+        const initialScale = isSpeedButton ? this.buttonSpeedInitialScale : this.buttonWorkerInitialScale;
+        const targetScale = new Vec3(
+            initialScale.x * this.handButtonBounceScale,
+            initialScale.y * this.handButtonBounceScale,
+            initialScale.z * this.handButtonBounceScale
+        );
+
+        const bounceTween = tween(buttonNode)
+            .to(Math.max(0.01, this.handButtonBounceDuration), { scale: targetScale }, { easing: 'quadOut' })
+            .to(Math.max(0.01, this.handButtonBounceDuration), { scale: initialScale.clone() }, { easing: 'quadIn' })
+            .start();
+
+        if (isSpeedButton) {
+            this.buttonSpeedBounceTween = bounceTween;
+        } else {
+            this.buttonWorkerBounceTween = bounceTween;
+        }
+    }
+
+    private stopHandButtonBounce(buttonNode: Node | null, isSpeedButton: boolean, resetScale: boolean): void {
+        const bounceTween = isSpeedButton ? this.buttonSpeedBounceTween : this.buttonWorkerBounceTween;
+        if (bounceTween) {
+            bounceTween.stop();
+            if (isSpeedButton) {
+                this.buttonSpeedBounceTween = null;
+            } else {
+                this.buttonWorkerBounceTween = null;
+            }
+        }
+
+        if (!buttonNode || !resetScale) {
+            return;
+        }
+
+        buttonNode.setScale(isSpeedButton ? this.buttonSpeedInitialScale : this.buttonWorkerInitialScale);
+    }
+
     /* ================= UTILS ================= */
 
     private setSpriteAlpha (node: Node, alpha: number) {
@@ -278,42 +360,21 @@ export class TusButton extends Component {
     }
 
     private refreshButtonAvailability () {
-        const currencyView = CurrencyView.instance;
-        const canAffordSpeed = currencyView ? currencyView.canAfford(this.speedCostAmount) : true;
-        const canAffordWorker = currencyView ? currencyView.canAfford(this.workerCostAmount) : true;
-
-        this.applyButtonState(this.buttonSpeed, this.isB1Interact && canAffordSpeed, canAffordSpeed);
-        this.applyButtonState(this.buttonWorker, this.isB2Interact && canAffordWorker, canAffordWorker);
+        this.applyButtonState(this.buttonSpeed);
+        this.applyButtonState(this.buttonWorker);
     }
 
-    private applyButtonState (btn: Button, enable: boolean, canAfford: boolean) {
+    private applyButtonState (btn: Button) {
         if (!btn) return;
-        btn.interactable = enable;
-        if(!enable) {
-            this.setSpriteAlpha(btn.node.parent, 100);
-            return;
-        }
-        this.setSpriteAlpha(btn.node.parent, canAfford ? 255 : 100);
-    }
-
-    private setButtonInteractable (btn: Button, enable: boolean) {
-        if (!btn) return;
-
-        if (btn === this.buttonSpeed) {
-            this.isB1Interact = enable;
-        } else if (btn === this.buttonWorker) {
-            this.isB2Interact = enable;
-        } else {
-            btn.interactable = enable;
-        }
-
-        this.refreshButtonAvailability();
+        btn.interactable = false;
+        this.setSpriteAlpha(btn.node.parent, 255);
     }
 
     private hideHandTemporarily(): void {
         if (!this.hand) {
             return;
         }
+        this.stopHandLoop();
         this.hand.active = false;
         this.unschedule(this.restoreHandVisibility);
         const delay = Math.max(0, this.handReappearDelay);
@@ -329,9 +390,11 @@ export class TusButton extends Component {
             return;
         }
         this.hand.active = this.handInitiallyActive;
+        this.startHandLoop();
     }
 
     onDestroy () {
+        this.stopHandLoop();
         this.unschedule(this.restoreHandVisibility);
         CurrencyView.offCurrencyChanged(this.currencyChangeHandler, this);
     }
