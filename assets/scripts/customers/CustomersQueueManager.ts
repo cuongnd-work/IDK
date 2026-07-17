@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, Vec3, tween } from 'cc';
 import { CatAnimationController } from 'db://assets/scripts/CatAnimationController';
 import { CustomersQueueEvent, CustomersQueueEvents } from 'db://assets/scripts/customers/CustomersQueueEvents';
+import { CountdownActivator } from 'db://assets/scripts/CountdownActivator';
 import { OrderPopup } from 'db://assets/scripts/OrderPopup';
 
 const { ccclass, property } = _decorator;
@@ -14,6 +15,7 @@ type ColumnData = {
 
 type QueueEntry = {
     node: Node;
+    animationController: CatAnimationController;
     targetPosition: Vec3;
     column: ColumnData;
 };
@@ -25,6 +27,24 @@ function cloneVec3 (source: Vec3): Vec3 {
 
 @ccclass('CustomersQueueManager')
 export class CustomersQueueManager extends Component {
+    @property({ type: Node, tooltip: 'Node lam diem bat dau cho customer di vao hang. Neu de trong se tu tim sibling ten InitCustomerPos.' })
+    initialCustomerPos: Node | null = null;
+
+    @property({ tooltip: 'Thoi gian tween customer tu InitCustomerPos ve vi tri da keo san (giay)', min: 0 })
+    initialMoveDuration = 0.45;
+
+    @property({ tooltip: 'Do tre giua tung customer khi di vao hang (giay)', min: 0 })
+    initialMoveStagger = 0.04;
+
+    @property({ type: [Component], tooltip: 'Cac component se duoc bat sau khi customer di vao hang xong.' })
+    startEnableComponents: Component[] = [];
+
+    @property({ type: [Node], tooltip: 'Cac node se duoc bat sau khi customer di vao hang xong.' })
+    startEnableNodes: Node[] = [];
+
+    @property({ type: [CountdownActivator], tooltip: 'Countdown se bat dau sau khi customer di vao hang xong.' })
+    startCountdownActivators: CountdownActivator[] = [];
+
     @property({ tooltip: 'Khoảng cách tối đa để gom mèo vào cùng 1 hàng theo trục X', min: 0 })
     columnSnapThreshold = 0.75;
 
@@ -55,6 +75,7 @@ export class CustomersQueueManager extends Component {
     private _columns: ColumnData[] = [];
     private _entryLookup = new Map<string, QueueEntry>();
     private _columnAdvanceMultipliers = new Map<number, number>();
+    private _hasStartedAfterInitialPlacement = false;
 
     onLoad (): void {
         CustomersQueueEvents.on(CustomersQueueEvent.ORDER_COMPLETED, this.onOrderCompleted, this);
@@ -62,6 +83,11 @@ export class CustomersQueueManager extends Component {
 
     start (): void {
         this.buildQueues();
+        this.setStartEnableNodes(false);
+        this.setStartEnableComponents(false);
+        if (!this.playInitialPlacement()) {
+            this.startAfterInitialPlacement();
+        }
     }
 
     onDestroy (): void {
@@ -80,6 +106,7 @@ export class CustomersQueueManager extends Component {
 
             const entry: QueueEntry = {
                 node: ctrl.node,
+                animationController: ctrl,
                 targetPosition,
                 column,
             };
@@ -94,6 +121,75 @@ export class CustomersQueueManager extends Component {
             column.sortIndex = index;
             column.entries.sort((a, b) => a.targetPosition.z - b.targetPosition.z);
         });
+    }
+
+    private playInitialPlacement (): boolean {
+        if (this.initialMoveDuration <= 0) {
+            return false;
+        }
+
+        const startNode = this.resolveInitialCustomerPos();
+        if (!startNode) {
+            return false;
+        }
+
+        const startWorldPosition = startNode.getWorldPosition(new Vec3());
+        const entries: QueueEntry[] = [];
+        this._columns.forEach((column) => {
+            entries.push(...column.entries);
+        });
+
+        entries.sort((a, b) => {
+            const orderA = this.getCustomerOrder(a);
+            const orderB = this.getCustomerOrder(b);
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+
+            return this.compareQueueEntries(a, b);
+        });
+
+        if (entries.length === 0) {
+            return false;
+        }
+
+        let completedCount = 0;
+        const totalCount = entries.length;
+
+        entries.forEach((entry, index) => {
+            tween(entry.node).stop();
+            entry.node.setWorldPosition(startWorldPosition);
+            this.playCustomerIdle(entry);
+
+            const sequence = tween(entry.node);
+            const delay = Math.max(0, this.initialMoveStagger) * index;
+
+            if (delay > 0) {
+                sequence.delay(delay);
+            }
+
+            sequence
+                .call(() => this.playCustomerRunIfMoving(entry, entry.targetPosition))
+                .to(this.initialMoveDuration, { position: entry.targetPosition }, { easing: 'sineOut' })
+                .call(() => {
+                    this.playCustomerIdle(entry);
+                    completedCount++;
+                    if (completedCount >= totalCount) {
+                        this.startAfterInitialPlacement();
+                    }
+                })
+                .start();
+        });
+
+        return true;
+    }
+
+    private resolveInitialCustomerPos (): Node | null {
+        if (this.initialCustomerPos) {
+            return this.initialCustomerPos;
+        }
+
+        return this.node.parent?.getChildByName('InitCustomerPos') ?? null;
     }
 
     private getOrCreateColumn (x: number): ColumnData {
@@ -150,9 +246,14 @@ export class CustomersQueueManager extends Component {
         finalTarget.add(this.exitOffset);
 
         const sequence = tween(entry.node);
+        this.playCustomerRunIfMoving(entry, sideTarget);
 
         if (this.sideStepDistance > 0 && this.sideStepDuration > 0) {
-            sequence.to(this.sideStepDuration, { position: sideTarget }, { easing: 'sineOut' });
+            sequence
+                .to(this.sideStepDuration, { position: sideTarget }, { easing: 'sineOut' })
+                .call(() => this.playCustomerRunIfMoving(entry, finalTarget));
+        } else {
+            sequence.call(() => this.playCustomerRunIfMoving(entry, finalTarget));
         }
 
         const exitOutDuration = Math.max(0.01, this.exitDuration * Math.max(0.01, this.exitDurationScale));
@@ -161,6 +262,7 @@ export class CustomersQueueManager extends Component {
             .to(exitOutDuration, { position: finalTarget }, { easing: 'sineIn' })
             .call(() => {
                 this._entryLookup.delete(entry.node.uuid);
+                this.playCustomerIdle(entry);
             });
 
         if (this.rejoinDelay > 0) {
@@ -170,9 +272,11 @@ export class CustomersQueueManager extends Component {
         const returnDuration = Math.max(this.rejoinDuration > 0 ? this.rejoinDuration : this.shiftDuration, 0.01);
 
         sequence
+            .call(() => this.playCustomerRunIfMoving(entry, rejoinSlot))
             .to(returnDuration, { position: rejoinSlot }, { easing: 'sineOut' })
             .call(() => {
                 this.reinsertEntry(entry, rejoinSlot);
+                this.playCustomerIdle(entry);
             })
             .start();
     }
@@ -193,8 +297,16 @@ export class CustomersQueueManager extends Component {
             tween(queueEntry.node)
                 .stop();
 
+            const shouldMove = this.isPositionDifferent(queueEntry.node.position, queueEntry.targetPosition);
+            if (shouldMove) {
+                this.playCustomerRun(queueEntry);
+            } else {
+                this.playCustomerIdle(queueEntry);
+            }
+
             tween(queueEntry.node)
                 .to(advanceDuration, { position: queueEntry.targetPosition }, { easing: 'sineOut' })
+                .call(() => this.playCustomerIdle(queueEntry))
                 .start();
 
             nextSlot = previousSlot;
@@ -259,6 +371,81 @@ export class CustomersQueueManager extends Component {
         }
 
         return column.centerX >= 0 ? 1 : -1;
+    }
+
+    private getCustomerOrder (entry: QueueEntry): number {
+        const match = /^Cat(\d+)$/i.exec(entry.node.name);
+        if (!match) {
+            return Number.MAX_SAFE_INTEGER;
+        }
+
+        return Number(match[1]);
+    }
+
+    private compareQueueEntries (a: QueueEntry, b: QueueEntry): number {
+        if (a.column.sortIndex !== b.column.sortIndex) {
+            return a.column.sortIndex - b.column.sortIndex;
+        }
+
+        return a.targetPosition.z - b.targetPosition.z;
+    }
+
+    private playCustomerRun (entry: QueueEntry): void {
+        entry.animationController.doRun();
+    }
+
+    private playCustomerRunIfMoving (entry: QueueEntry, targetPosition: Vec3): void {
+        if (this.isPositionDifferent(entry.node.position, targetPosition)) {
+            this.playCustomerRun(entry);
+        } else {
+            this.playCustomerIdle(entry);
+        }
+    }
+
+    private playCustomerIdle (entry: QueueEntry): void {
+        entry.animationController.doIdle();
+    }
+
+    private isPositionDifferent (a: Vec3, b: Vec3): boolean {
+        return Vec3.squaredDistance(a, b) > 0.0001;
+    }
+
+    private startAfterInitialPlacement (): void {
+        if (this._hasStartedAfterInitialPlacement) {
+            return;
+        }
+
+        this._hasStartedAfterInitialPlacement = true;
+        this.setStartEnableNodes(true);
+        this.setStartEnableComponents(true);
+        this.startCountdowns();
+    }
+
+    private setStartEnableNodes(active: boolean): void {
+        for (const node of this.startEnableNodes ?? []) {
+            if (!node) {
+                continue;
+            }
+            node.active = active;
+        }
+    }
+
+    private setStartEnableComponents(enable: boolean): void {
+        for (const component of this.startEnableComponents ?? []) {
+            if (!component) {
+                continue;
+            }
+            component.enabled = enable;
+        }
+    }
+
+    private startCountdowns (): void {
+        for (const activator of this.startCountdownActivators ?? []) {
+            if (!activator) {
+                continue;
+            }
+            activator.startCountdown();
+        }
     }
 
     private reinsertEntry (entry: QueueEntry, slot: Vec3): void {

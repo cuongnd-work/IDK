@@ -18,6 +18,7 @@ export class CatAnimationController extends Component {
     private bedoNodeInitiallyActive = true;
 
     protected onLoad (): void {
+        this.resolveAnimation();
         this.resolveOrderPopup();
         if (this.bedoToggleNode) {
             this.bedoNodeInitiallyActive = this.bedoToggleNode.active;
@@ -32,6 +33,14 @@ export class CatAnimationController extends Component {
         }
 
         return this.orderPopup;
+    }
+
+    private resolveAnimation (): SkeletalAnimation | null {
+        if (!this.animation) {
+            this.animation = this.getComponentInChildren(SkeletalAnimation);
+        }
+
+        return this.animation;
     }
 
     public doIdle (): void {
@@ -49,6 +58,10 @@ export class CatAnimationController extends Component {
             this.sellTargetPopup.sell();
         }
 
+        this.doRun();
+    }
+
+    public doRun (): void {
         this.setBedoNodeActive(false);
         this.playClip('Run');
     }
@@ -70,17 +83,19 @@ export class CatAnimationController extends Component {
     }
 
     private playClip (clipName: string): void {
-        if (!this.animation) {
+        const animation = this.resolveAnimation();
+        if (!animation) {
             return;
         }
 
         this.currentClip = clipName;
-        this.animation.play(clipName);
+        animation.play(clipName);
         this.applySpeedToClip(clipName);
     }
 
     private applySpeedToClip (clipName?: string): void {
-        if (!this.animation) {
+        const animation = this.resolveAnimation();
+        if (!animation) {
             return;
         }
 
@@ -89,7 +104,7 @@ export class CatAnimationController extends Component {
             return;
         }
 
-        const state = this.animation.getState(targetClip);
+        const state = animation.getState(targetClip);
         if (state) {
             state.speed = this.animationSpeedMultiplier;
         }
@@ -106,5 +121,3 @@ export class CatAnimationController extends Component {
         this.bedoToggleNode.active = shouldBeActive;
     }
 }
-
-
