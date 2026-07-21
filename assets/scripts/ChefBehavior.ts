@@ -78,6 +78,9 @@ export class ChefBehavior extends Component {
     @property({ tooltip: 'Sau khi vao vi tri ren thi chi ren lien tuc, khong be do sang pointB.' })
     public forgeContinuouslyWithoutDelivery = true;
 
+    @property({ type: [Node], tooltip: 'Cac node UI se chi bat khi CatBase bat dau ren.' })
+    public forgeStartEnableNodes: Node[] = [];
+
     /* ================= INTERNAL ================= */
 
     private _state: ChefState = ChefState.Doing;
@@ -113,6 +116,7 @@ export class ChefBehavior extends Component {
         this._groundY = this.node.worldPosition.y;
         this.hamburger.active = false;
         this.coin.active = false;
+        this.setForgeStartEnableNodes(false);
         this.resolveQueueManagerReference();
         this.syncSpeedDependents();
 
@@ -190,7 +194,17 @@ export class ChefBehavior extends Component {
         this._state = ChefState.ForgingLoop;
         this.hamburger.active = false;
         this.coin.active = false;
+        this.setForgeStartEnableNodes(true);
         this.animCtrl?.doDoing();
+    }
+
+    private setForgeStartEnableNodes (active: boolean): void {
+        for (const node of this.forgeStartEnableNodes ?? []) {
+            if (!node) {
+                continue;
+            }
+            node.active = active;
+        }
     }
 
     private enterDoing (): void {
