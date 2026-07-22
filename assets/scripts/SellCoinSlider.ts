@@ -1,7 +1,14 @@
 import { _decorator, Component, Slider, Label, math, Button, Node, NodeEventType } from 'cc';
 import { ChefBehavior } from 'db://assets/scripts/ChefBehavior';
 import { CountdownActivator } from 'db://assets/scripts/CountdownActivator';
+import { CustomersQueueManager } from 'db://assets/scripts/customers/CustomersQueueManager';
+import { TusButton } from 'db://assets/scripts/TusButton';
 const { ccclass, property } = _decorator;
+
+type ManualCustomerQueue = CustomersQueueManager & {
+    holdInitialPlacementUntilManualStart?: () => void;
+    startInitialPlacementFlow?: () => void;
+};
 
 @ccclass('SellCoinSlider')
 export class SellCoinSlider extends Component {
@@ -50,6 +57,12 @@ export class SellCoinSlider extends Component {
     @property({ tooltip: 'Giup khoa chef cho den khi bam confirm.' })
     public lockChefsUntilConfirm: boolean = true;
 
+    @property({ tooltip: 'Customer queue chi bat dau sau khi bam confirm.' })
+    public lockCustomerQueuesUntilConfirm: boolean = true;
+
+    @property({ type: [CustomersQueueManager], tooltip: 'Cac customer queue se duoc bat dau sau khi bam confirm. Neu de trong se tu tim trong scene.' })
+    public customerQueueManagers: CustomersQueueManager[] = [];
+
     @property({ type: [CountdownActivator], tooltip: 'Countdown chi bat dau sau khi bam confirm.' })
     public countdownActivators: CountdownActivator[] = [];
 
@@ -59,12 +72,14 @@ export class SellCoinSlider extends Component {
     private currentCoin: number = 50;
     private chefsUnlocked: boolean = false;
     private countdownStarted: boolean = false;
+    private customerQueuesStarted: boolean = false;
 
     protected onLoad(): void {
         this.ensureValidRange();
         if (!this.lockChefsUntilConfirm) {
             this.chefsUnlocked = true;
         }
+        this.prepareCustomerQueuesForManualStart();
         this.prepareCountdownsForManualStart();
     }
 
@@ -170,9 +185,15 @@ export class SellCoinSlider extends Component {
     }
 
     private processConfirmation(hideNode?: Node | null, showNode?: Node | null): void {
-        this.applyCoinValueToChef();
         this.toggleNodePair(hideNode, showNode);
+        this.startRuntimeFlow();
+    }
+
+    public startRuntimeFlow(): void {
+        this.applyCoinValueToChef();
         this.unlockChefs();
+        this.showUpgradeButtons();
+        this.triggerCustomerQueues();
         this.triggerCountdowns();
     }
 
@@ -334,6 +355,62 @@ export class SellCoinSlider extends Component {
         this.setChefEnabledState(targets, true);
     }
 
+    private prepareCustomerQueuesForManualStart(): void {
+        if (!this.lockCustomerQueuesUntilConfirm) {
+            return;
+        }
+
+        const queues = this.collectCustomerQueues();
+        for (const queue of queues) {
+            (queue as ManualCustomerQueue).holdInitialPlacementUntilManualStart?.();
+        }
+    }
+
+    private triggerCustomerQueues(): void {
+        if (!this.lockCustomerQueuesUntilConfirm || this.customerQueuesStarted) {
+            return;
+        }
+
+        const queues = this.collectCustomerQueues();
+        for (const queue of queues) {
+            (queue as ManualCustomerQueue).startInitialPlacementFlow?.();
+        }
+
+        this.customerQueuesStarted = true;
+    }
+
+    private collectCustomerQueues(): CustomersQueueManager[] {
+        const result: CustomersQueueManager[] = [];
+
+        this.addCustomerQueues(result, this.customerQueueManagers);
+
+        for (const chef of this.collectChefTargets()) {
+            if (!chef?.queueManager) {
+                continue;
+            }
+            this.addCustomerQueue(result, chef.queueManager);
+        }
+
+        const sceneQueues = this.node.scene?.getComponentsInChildren(CustomersQueueManager) ?? [];
+        this.addCustomerQueues(result, sceneQueues);
+
+        return result;
+    }
+
+    private addCustomerQueues(target: CustomersQueueManager[], queues: CustomersQueueManager[] | null | undefined): void {
+        for (const queue of queues ?? []) {
+            this.addCustomerQueue(target, queue);
+        }
+    }
+
+    private addCustomerQueue(target: CustomersQueueManager[], queue: CustomersQueueManager | null | undefined): void {
+        if (!queue || target.includes(queue)) {
+            return;
+        }
+
+        target.push(queue);
+    }
+
     private triggerCountdowns(): void {
         if (!this.restartCountdownOnConfirm && this.countdownStarted) {
             return;
@@ -348,6 +425,13 @@ export class SellCoinSlider extends Component {
             activator.startCountdown();
         }
         this.countdownStarted = true;
+    }
+
+    private showUpgradeButtons(): void {
+        const buttons = this.node.scene?.getComponentsInChildren(TusButton) ?? [];
+        for (const button of buttons) {
+            button.startRuntimeFlow();
+        }
     }
 
     private ensureValidRange(): void {

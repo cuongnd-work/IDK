@@ -31,6 +31,9 @@ export class TusButton extends Component {
     @property(Button)
     public buttonWorker: Button = null!;
 
+    @property({ tooltip: 'An 2 button nang cap cho den khi runtime flow duoc start.' })
+    public hideUpgradeButtonsUntilRuntimeStart: boolean = true;
+
     @property(Node)
     public hand: Node = null!;
 
@@ -112,6 +115,10 @@ export class TusButton extends Component {
     private buttonWorkerBounceTween: Tween<Node> | null = null;
     private readonly buttonSpeedInitialScale = new Vec3();
     private readonly buttonWorkerInitialScale = new Vec3();
+    private buttonsRegistered: boolean = false;
+    private runtimeFlowStarted: boolean = false;
+    private speedClickCount: number = 0;
+    private workerClickCount: number = 0;
 
     /* ================= LIFE ================= */
 
@@ -124,6 +131,7 @@ export class TusButton extends Component {
     }
 
     start () {
+        this.registerButtonEvents();
         this.zoom_button1.stopZoomAndReset();
         this.zoom_button2.stopZoomAndReset();
 
@@ -135,34 +143,64 @@ export class TusButton extends Component {
         }
 
         this.workerClicked = false;
+        this.speedClickCount = 0;
+        this.workerClickCount = 0;
+        this.isCompleted = false;
         this.setChefSpeedNodesActive(false);
+        if (this.end) {
+            this.end.active = false;
+        }
+        if (this.hideUpgradeButtonsUntilRuntimeStart) {
+            this.setUpgradeButtonsVisible(false);
+        } else {
+            this.runtimeFlowStarted = true;
+        }
 
         CurrencyView.onCurrencyChanged(this.currencyChangeHandler, this);
         this.refreshButtonAvailability();
-        this.startHandLoop();
+        if (this.runtimeFlowStarted) {
+            this.startHandLoop();
+        }
     }
 
     public isCompleted: boolean = false;
+
+    public startRuntimeFlow(): void {
+        if (this.runtimeFlowStarted) {
+            return;
+        }
+
+        this.runtimeFlowStarted = true;
+        this.setUpgradeButtonsVisible(true);
+        this.refreshButtonAvailability();
+        this.startHandLoop();
+    }
 
     /* ================= CLICK ================= */
 
     public ButtonSpeedClicker (): void {
         if(this.isCompleted) return;
 
+        if (this.speedClickCount >= this.getRequiredSpeedClickCount()) {
+            this.refreshButtonAvailability();
+            this.hideHandTemporarily();
+            return;
+        }
+
         if(!CurrencyView.instance.trySubtractCurrency(this.speedCostAmount)) return;
 
         this.playClickSound();
         object_pool_manager.instance.Spawn(this.flash, new Vec3(0,0,0), null, this.flashParent);
 
-        const totalLimit = this.countMax + this.countWorkerMax;
-        if (this._count >= totalLimit) {
-            this.hideHandTemporarily();
-            return;
-        }
-
         this._count++;
+        this.speedClickCount++;
         this.applySpeedBoost(this.chefBehavior, 0);
         this.applySpeedBoost(this.chefWorkerBehavior, 1);
+        this.refreshButtonAvailability();
+        this.tryCompleteUpgradeFlow();
+        if (this.isCompleted) {
+            return;
+        }
         this.hideHandTemporarily();
     }
 
@@ -172,7 +210,8 @@ export class TusButton extends Component {
     public worker: Node = null;
 
     public ButtonWorkerClicker (): void {
-        if (this.workerClicked) {
+        if (this.workerClickCount >= this.getRequiredWorkerClickCount()) {
+            this.refreshButtonAvailability();
             return;
         }
 
@@ -180,10 +219,17 @@ export class TusButton extends Component {
 
         this.playClickSound();
 
-        this.workerClicked = true;
+        this.workerClickCount++;
+        this.workerClicked = this.workerClickCount >= this.getRequiredWorkerClickCount();
 
         if (this.worker) {
             this.worker.active = true;
+        }
+
+        this.refreshButtonAvailability();
+        this.tryCompleteUpgradeFlow();
+        if (this.isCompleted) {
+            return;
         }
 
         this.zoom_button1.stopZoomAndReset();
@@ -198,6 +244,40 @@ export class TusButton extends Component {
             this.hideHandTemporarily();
             this.restoreHandVisibility();
         }
+    }
+
+    private tryCompleteUpgradeFlow(): void {
+        if (this.isCompleted || !this.runtimeFlowStarted) {
+            return;
+        }
+
+        if (this.speedClickCount < this.getRequiredSpeedClickCount()) {
+            return;
+        }
+
+        if (this.workerClickCount < this.getRequiredWorkerClickCount()) {
+            return;
+        }
+
+        this.completeUpgradeFlow();
+    }
+
+    private completeUpgradeFlow(): void {
+        this.isCompleted = true;
+        this.stopHandLoop();
+        this.unschedule(this.restoreHandVisibility);
+        if (this.hand) {
+            this.hand.active = false;
+        }
+
+        this.setUpgradeButtonsVisible(false);
+        this.refreshButtonAvailability();
+
+        if (this.end) {
+            this.end.active = true;
+        }
+
+        this.endAnim?.play();
     }
 
     /* ================= SOUND ================= */
@@ -360,14 +440,81 @@ export class TusButton extends Component {
     }
 
     private refreshButtonAvailability () {
-        this.applyButtonState(this.buttonSpeed);
-        this.applyButtonState(this.buttonWorker);
+        this.applyButtonState(this.buttonSpeed, this.canUseSpeedButton());
+        this.applyButtonState(this.buttonWorker, this.canUseWorkerButton());
     }
 
-    private applyButtonState (btn: Button) {
+    private canUseSpeedButton(): boolean {
+        const currency = CurrencyView.instance;
+        return !this.isCompleted &&
+            this.runtimeFlowStarted &&
+            this.speedClickCount < this.getRequiredSpeedClickCount() &&
+            !!currency &&
+            currency.canAfford(this.speedCostAmount);
+    }
+
+    private canUseWorkerButton(): boolean {
+        const currency = CurrencyView.instance;
+        return !this.isCompleted &&
+            this.runtimeFlowStarted &&
+            this.workerClickCount < this.getRequiredWorkerClickCount() &&
+            !!currency &&
+            currency.canAfford(this.workerCostAmount);
+    }
+
+    private getRequiredSpeedClickCount(): number {
+        return Math.max(0, Math.floor(this.countMax));
+    }
+
+    private getRequiredWorkerClickCount(): number {
+        return Math.max(0, Math.floor(this.countWorkerMax));
+    }
+
+    private applyButtonState (btn: Button, interactable: boolean) {
         if (!btn) return;
-        btn.interactable = false;
-        this.setSpriteAlpha(btn.node.parent, 255);
+        btn.interactable = interactable;
+        this.setSpriteAlpha(btn.node.parent ?? btn.node, 255);
+    }
+
+    private setUpgradeButtonsVisible(visible: boolean): void {
+        this.setButtonRootVisible(this.buttonSpeed, visible);
+        this.setButtonRootVisible(this.buttonWorker, visible);
+
+        if (!visible) {
+            this.stopHandLoop();
+            if (this.hand) {
+                this.hand.active = false;
+            }
+        }
+    }
+
+    private setButtonRootVisible(button: Button | null, visible: boolean): void {
+        const root = button?.node.parent ?? button?.node ?? null;
+        if (!root) {
+            return;
+        }
+
+        root.active = visible;
+    }
+
+    private registerButtonEvents(): void {
+        if (this.buttonsRegistered) {
+            return;
+        }
+
+        this.buttonSpeed?.node.on(Button.EventType.CLICK, this.ButtonSpeedClicker, this);
+        this.buttonWorker?.node.on(Button.EventType.CLICK, this.ButtonWorkerClicker, this);
+        this.buttonsRegistered = true;
+    }
+
+    private unregisterButtonEvents(): void {
+        if (!this.buttonsRegistered) {
+            return;
+        }
+
+        this.buttonSpeed?.node.off(Button.EventType.CLICK, this.ButtonSpeedClicker, this);
+        this.buttonWorker?.node.off(Button.EventType.CLICK, this.ButtonWorkerClicker, this);
+        this.buttonsRegistered = false;
     }
 
     private hideHandTemporarily(): void {
@@ -394,6 +541,7 @@ export class TusButton extends Component {
     }
 
     onDestroy () {
+        this.unregisterButtonEvents();
         this.stopHandLoop();
         this.unschedule(this.restoreHandVisibility);
         CurrencyView.offCurrencyChanged(this.currencyChangeHandler, this);

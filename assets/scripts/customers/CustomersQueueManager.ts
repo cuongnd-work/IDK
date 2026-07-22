@@ -72,10 +72,15 @@ export class CustomersQueueManager extends Component {
     @property({ tooltip: 'Thời gian tween mèo còn lại tiến lên (giây)', min: 0 })
     shiftDuration = 0.25;
 
+    @property({ tooltip: 'Neu true, customer chi bat dau di vao hang khi code goi startInitialPlacementFlow().' })
+    public waitForManualInitialPlacement = true;
+
     private _columns: ColumnData[] = [];
     private _entryLookup = new Map<string, QueueEntry>();
     private _columnAdvanceMultipliers = new Map<number, number>();
     private _hasStartedAfterInitialPlacement = false;
+    private _hasPreparedQueues = false;
+    private _hasStartedInitialPlacementFlow = false;
     private _afterInitialPlacementListeners: Array<{ cb: () => void; target?: unknown }> = [];
 
     onLoad (): void {
@@ -83,12 +88,24 @@ export class CustomersQueueManager extends Component {
     }
 
     start (): void {
+        this.prepareQueuesForInitialPlacement();
+
+        if (this.waitForManualInitialPlacement) {
+            return;
+        }
+
+        this.startInitialPlacementFlow();
+    }
+
+    private prepareQueuesForInitialPlacement (): void {
+        if (this._hasPreparedQueues) {
+            return;
+        }
+
         this.buildQueues();
         this.setStartEnableNodes(false);
         this.setStartEnableComponents(false);
-        if (!this.playInitialPlacement()) {
-            this.startAfterInitialPlacement();
-        }
+        this._hasPreparedQueues = true;
     }
 
     onDestroy (): void {
@@ -98,6 +115,28 @@ export class CustomersQueueManager extends Component {
 
     public get hasStartedAfterInitialPlacement (): boolean {
         return this._hasStartedAfterInitialPlacement;
+    }
+
+    public holdInitialPlacementUntilManualStart (): void {
+        if (this._hasStartedInitialPlacementFlow || this._hasStartedAfterInitialPlacement) {
+            return;
+        }
+
+        this.waitForManualInitialPlacement = true;
+    }
+
+    public startInitialPlacementFlow (): void {
+        if (this._hasStartedInitialPlacementFlow || this._hasStartedAfterInitialPlacement) {
+            return;
+        }
+
+        this.waitForManualInitialPlacement = false;
+        this.prepareQueuesForInitialPlacement();
+        this._hasStartedInitialPlacementFlow = true;
+
+        if (!this.playInitialPlacement()) {
+            this.startAfterInitialPlacement();
+        }
     }
 
     public registerAfterInitialPlacement(callback: () => void, target?: unknown): void {

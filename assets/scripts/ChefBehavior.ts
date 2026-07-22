@@ -76,7 +76,7 @@ export class ChefBehavior extends Component {
     public waitForCustomerInitialPlacement = true;
 
     @property({ tooltip: 'Sau khi vao vi tri ren thi chi ren lien tuc, khong be do sang pointB.' })
-    public forgeContinuouslyWithoutDelivery = true;
+    public forgeContinuouslyWithoutDelivery = false;
 
     @property({ type: [Node], tooltip: 'Cac node UI se chi bat khi CatBase bat dau ren.' })
     public forgeStartEnableNodes: Node[] = [];
@@ -116,7 +116,9 @@ export class ChefBehavior extends Component {
         this._groundY = this.node.worldPosition.y;
         this.hamburger.active = false;
         this.coin.active = false;
-        this.setForgeStartEnableNodes(false);
+        if (this.forgeContinuouslyWithoutDelivery) {
+            this.setForgeStartEnableNodes(false);
+        }
         this.resolveQueueManagerReference();
         this.syncSpeedDependents();
 
