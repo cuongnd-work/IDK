@@ -10,7 +10,8 @@ import {
     AudioSource,
     AudioClip,
     Prefab,
-    Animation
+    Animation,
+    UIOpacity
 } from 'cc';
 import { zoom_button } from "db://assets/scripts/zoom_button";
 import { ChefBehavior } from "./ChefBehavior";
@@ -51,6 +52,9 @@ export class TusButton extends Component {
 
     @property({ tooltip: 'Thoi gian moi nhip nay cua button.' })
     public handButtonBounceDuration: number = 0.12;
+
+    @property({ tooltip: 'Alpha cua nut khi khong con bam duoc.' })
+    public disabledButtonAlpha: number = 120;
 
     @property(ChefBehavior)
     public chefBehavior: ChefBehavior = null!;
@@ -440,8 +444,8 @@ export class TusButton extends Component {
     }
 
     private refreshButtonAvailability () {
-        this.applyButtonState(this.buttonSpeed, this.canUseSpeedButton());
-        this.applyButtonState(this.buttonWorker, this.canUseWorkerButton());
+        this.applyButtonState(this.buttonSpeed, this.canUseSpeedButton(), this.canReceiveUpgradeButtonClick());
+        this.applyButtonState(this.buttonWorker, this.canUseWorkerButton(), this.canReceiveUpgradeButtonClick());
     }
 
     private canUseSpeedButton(): boolean {
@@ -470,10 +474,19 @@ export class TusButton extends Component {
         return Math.max(0, Math.floor(this.countWorkerMax));
     }
 
-    private applyButtonState (btn: Button, interactable: boolean) {
+    private canReceiveUpgradeButtonClick(): boolean {
+        return this.runtimeFlowStarted && !this.isCompleted;
+    }
+
+    private applyButtonState (btn: Button, visuallyActive: boolean, interactable: boolean) {
         if (!btn) return;
         btn.interactable = interactable;
-        this.setSpriteAlpha(btn.node.parent ?? btn.node, 255);
+        this.setNodeOpacity(btn.node.parent ?? btn.node, visuallyActive ? 255 : this.disabledButtonAlpha);
+    }
+
+    private setNodeOpacity(node: Node, alpha: number): void {
+        const opacity = node.getComponent(UIOpacity) ?? node.addComponent(UIOpacity);
+        opacity.opacity = Math.max(0, Math.min(255, Math.round(alpha)));
     }
 
     private setUpgradeButtonsVisible(visible: boolean): void {

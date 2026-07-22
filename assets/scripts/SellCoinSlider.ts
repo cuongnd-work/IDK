@@ -1,9 +1,12 @@
-import { _decorator, Component, Slider, Label, math, Button, Node, NodeEventType } from 'cc';
+import { _decorator, Component, Slider, Label, math, Button, Node, NodeEventType, Color } from 'cc';
 import { ChefBehavior } from 'db://assets/scripts/ChefBehavior';
 import { CountdownActivator } from 'db://assets/scripts/CountdownActivator';
 import { CustomersQueueManager } from 'db://assets/scripts/customers/CustomersQueueManager';
 import { TusButton } from 'db://assets/scripts/TusButton';
 const { ccclass, property } = _decorator;
+
+const DIFFICULTY_LABELS = ['Easy', 'Medium', 'Hard'];
+const DIFFICULTY_STEP_COUNT = DIFFICULTY_LABELS.length - 1;
 
 type ManualCustomerQueue = CustomersQueueManager & {
     holdInitialPlacementUntilManualStart?: () => void;
@@ -26,6 +29,18 @@ export class SellCoinSlider extends Component {
 
     @property({ tooltip: 'Gia tri coin lon nhat khi ban.' })
     public maxCoin: number = 999;
+
+    @property({ tooltip: 'Difficulty mac dinh: 0 Easy, 1 Medium, 2 Hard.' })
+    public defaultDifficultyIndex: number = 0;
+
+    @property({ tooltip: 'Mau text Easy.' })
+    public easyTextColor: Color = new Color(70, 210, 90, 255);
+
+    @property({ tooltip: 'Mau text Medium.' })
+    public mediumTextColor: Color = new Color(255, 205, 70, 255);
+
+    @property({ tooltip: 'Mau text Hard.' })
+    public hardTextColor: Color = new Color(255, 85, 70, 255);
 
     @property(Button)
     public confirmButton: Button = null;
@@ -70,12 +85,15 @@ export class SellCoinSlider extends Component {
     public restartCountdownOnConfirm: boolean = false;
 
     private currentCoin: number = 50;
+    private currentDifficultyIndex: number = 0;
     private chefsUnlocked: boolean = false;
     private countdownStarted: boolean = false;
     private customerQueuesStarted: boolean = false;
+    private hasAppliedInitialDifficulty: boolean = false;
 
     protected onLoad(): void {
         this.ensureValidRange();
+        this.applyDifficultyIndex(this.defaultDifficultyIndex);
         if (!this.lockChefsUntilConfirm) {
             this.chefsUnlocked = true;
         }
@@ -101,12 +119,11 @@ export class SellCoinSlider extends Component {
     }
 
     public set coinValue(value: number) {
-        const [minValue, maxValue] = this.getRange();
-        const clamped = math.clamp(value, minValue, maxValue);
-        this.currentCoin = Math.round(clamped);
-        this.updateSliderProgress();
-        this.updateLabel();
-        this.applyCoinValueToChef();
+        this.applyDifficultyIndex(this.getClosestDifficultyIndexForCoin(value));
+    }
+
+    public get difficultyValue(): string {
+        return this.getCurrentDifficultyLabel();
     }
 
     private registerSliderEvents(): void {
@@ -154,26 +171,27 @@ export class SellCoinSlider extends Component {
     }
 
     private refreshFromSlider(): void {
+        if (!this.hasAppliedInitialDifficulty) {
+            this.hasAppliedInitialDifficulty = true;
+            this.applyDifficultyIndex(this.defaultDifficultyIndex);
+            return;
+        }
+
         if (!this.slider) {
             this.updateLabel();
             this.applyCoinValueToChef();
             return;
         }
-        this.slider.progress = math.clamp01(this.slider.progress);
-        this.currentCoin = this.evaluateCoin(this.slider.progress);
-        this.updateLabel();
-        this.applyCoinValueToChef();
+
+        this.applyDifficultyIndex(this.evaluateDifficultyIndex(this.slider.progress));
     }
 
     private handleSliderChanged(): void {
         if (!this.slider) {
             return;
         }
-        const normalized = math.clamp01(this.slider.progress);
-        this.slider.progress = normalized;
-        this.currentCoin = this.evaluateCoin(normalized);
-        this.updateLabel();
-        this.applyCoinValueToChef();
+        this.hasAppliedInitialDifficulty = true;
+        this.applyDifficultyIndex(this.evaluateDifficultyIndex(this.slider.progress));
     }
 
     private handleConfirmClicked(): void {
@@ -202,14 +220,36 @@ export class SellCoinSlider extends Component {
     }
 
     private handleSliderReleased(): void {
+        this.updateSliderProgress();
         this.setSliderHoldNodeActive(false);
     }
 
-    private evaluateCoin(normalized: number): number {
+    private evaluateDifficultyIndex(normalized: number): number {
+        return math.clamp(Math.round(math.clamp01(normalized) * DIFFICULTY_STEP_COUNT), 0, DIFFICULTY_STEP_COUNT);
+    }
+
+    private applyDifficultyIndex(index: number): void {
+        this.currentDifficultyIndex = this.normalizeDifficultyIndex(index);
+        this.currentCoin = this.evaluateCoinForDifficulty(this.currentDifficultyIndex);
+        this.updateSliderProgress();
+        this.updateLabel();
+        this.applyCoinValueToChef();
+    }
+
+    private normalizeDifficultyIndex(index: number): number {
+        const value = Number.isFinite(index) ? index : 0;
+        return math.clamp(Math.round(value), 0, DIFFICULTY_STEP_COUNT);
+    }
+
+    private evaluateCoinForDifficulty(index: number): number {
         const [minValue, maxValue] = this.getRange();
         if (maxValue === minValue) {
             return minValue;
         }
+
+        const normalized = DIFFICULTY_STEP_COUNT <= 0
+            ? 0
+            : math.clamp(index, 0, DIFFICULTY_STEP_COUNT) / DIFFICULTY_STEP_COUNT;
         const value = math.lerp(minValue, maxValue, normalized);
         return Math.round(value);
     }
@@ -218,22 +258,54 @@ export class SellCoinSlider extends Component {
         if (!this.slider) {
             return;
         }
-        const [minValue, maxValue] = this.getRange();
-        const normalized = maxValue === minValue
+        this.slider.progress = DIFFICULTY_STEP_COUNT <= 0
             ? 0
-            : (this.currentCoin - minValue) / (maxValue - minValue);
-        this.slider.progress = math.clamp01(normalized);
+            : this.currentDifficultyIndex / DIFFICULTY_STEP_COUNT;
     }
 
     private updateLabel(): void {
-        const targets = this.collectCoinLabelTargets();
-        if (targets.length === 0) {
-            return;
+        if (this.coinLabel) {
+            this.coinLabel.string = this.getCurrentDifficultyLabel();
+            this.coinLabel.color = this.getCurrentDifficultyColor();
         }
+
         const coinString = `${this.currentCoin}`;
-        for (const label of targets) {
+        for (const label of this.coinLabels ?? []) {
+            if (!label || label === this.coinLabel) {
+                continue;
+            }
             label.string = coinString;
         }
+    }
+
+    private getCurrentDifficultyLabel(): string {
+        return DIFFICULTY_LABELS[this.currentDifficultyIndex] ?? DIFFICULTY_LABELS[0];
+    }
+
+    private getCurrentDifficultyColor(): Color {
+        if (this.currentDifficultyIndex === 1) {
+            return this.mediumTextColor.clone();
+        }
+        if (this.currentDifficultyIndex === 2) {
+            return this.hardTextColor.clone();
+        }
+        return this.easyTextColor.clone();
+    }
+
+    private getClosestDifficultyIndexForCoin(value: number): number {
+        const normalizedValue = Number.isFinite(value) ? value : this.currentCoin;
+        let closestIndex = 0;
+        let closestDistance = Number.MAX_VALUE;
+
+        for (let index = 0; index < DIFFICULTY_LABELS.length; index++) {
+            const distance = Math.abs(this.evaluateCoinForDifficulty(index) - normalizedValue);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = index;
+            }
+        }
+
+        return closestIndex;
     }
 
     public setCoinLabelTargets(labels: (Label | null | undefined)[]): void {
@@ -443,7 +515,7 @@ export class SellCoinSlider extends Component {
             this.minCoin = this.maxCoin;
             this.maxCoin = temp;
         }
-        this.currentCoin = Math.round(this.minCoin);
+        this.applyDifficultyIndex(this.currentDifficultyIndex);
     }
 
     private getRange(): [number, number] {

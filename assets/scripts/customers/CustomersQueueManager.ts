@@ -75,6 +75,9 @@ export class CustomersQueueManager extends Component {
     @property({ tooltip: 'Neu true, customer chi bat dau di vao hang khi code goi startInitialPlacementFlow().' })
     public waitForManualInitialPlacement = true;
 
+    @property({ tooltip: 'An customer cho den khi startInitialPlacementFlow() duoc goi.' })
+    public hideCustomersUntilManualStart = true;
+
     private _columns: ColumnData[] = [];
     private _entryLookup = new Map<string, QueueEntry>();
     private _columnAdvanceMultipliers = new Map<number, number>();
@@ -91,6 +94,7 @@ export class CustomersQueueManager extends Component {
         this.prepareQueuesForInitialPlacement();
 
         if (this.waitForManualInitialPlacement) {
+            this.setCustomerNodesActive(false);
             return;
         }
 
@@ -133,6 +137,7 @@ export class CustomersQueueManager extends Component {
         this.waitForManualInitialPlacement = false;
         this.prepareQueuesForInitialPlacement();
         this._hasStartedInitialPlacementFlow = true;
+        this.setCustomerNodesActive(true);
 
         if (!this.playInitialPlacement()) {
             this.startAfterInitialPlacement();
@@ -488,6 +493,22 @@ export class CustomersQueueManager extends Component {
         this.setStartEnableComponents(true);
         this.startCountdowns();
         this.emitAfterInitialPlacement();
+    }
+
+    private setCustomerNodesActive(active: boolean): void {
+        if (!this.hideCustomersUntilManualStart) {
+            return;
+        }
+
+        for (const column of this._columns) {
+            for (const entry of column.entries) {
+                if (!entry?.node) {
+                    continue;
+                }
+
+                entry.node.active = active;
+            }
+        }
     }
 
     private emitAfterInitialPlacement (): void {
