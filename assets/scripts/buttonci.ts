@@ -16,6 +16,6 @@ export class buttonci extends Component {
 
     onButtonClick() {
         super_html_script.on_click_game_end();
-        super_html_script.on_click_download();
+        super_html_script.on_click_download("end_button");
     }
 }

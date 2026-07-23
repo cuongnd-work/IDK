@@ -3,6 +3,7 @@ import { ChefBehavior } from 'db://assets/scripts/ChefBehavior';
 import { CountdownActivator } from 'db://assets/scripts/CountdownActivator';
 import { CustomersQueueManager } from 'db://assets/scripts/customers/CustomersQueueManager';
 import { TusButton } from 'db://assets/scripts/TusButton';
+import { tracking_service } from 'db://assets/plugins/playable-foundation/tracking/tracking_service';
 const { ccclass, property } = _decorator;
 
 const DIFFICULTY_LABELS = ['Easy', 'Medium', 'Hard'];
@@ -90,6 +91,10 @@ export class SellCoinSlider extends Component {
     private countdownStarted: boolean = false;
     private customerQueuesStarted: boolean = false;
     private hasAppliedInitialDifficulty: boolean = false;
+    private difficultyNodes: (Node | null)[] | null = null;
+    private upgradeButtonsShown: boolean = false;
+    private upgradeButtonWaitRegistered: boolean = false;
+    private pendingInitialPlacementQueues: number = 0;
 
     protected onLoad(): void {
         this.ensureValidRange();
@@ -195,14 +200,15 @@ export class SellCoinSlider extends Component {
     }
 
     private handleConfirmClicked(): void {
-        this.processConfirmation(this.confirmHideNode, this.confirmShowNode);
+        this.processConfirmation("confirm_button", this.confirmHideNode, this.confirmShowNode);
     }
 
     private handleSecondaryClicked(): void {
-        this.processConfirmation(this.secondaryHideNode, this.secondaryShowNode);
+        this.processConfirmation("secondary_button", this.secondaryHideNode, this.secondaryShowNode);
     }
 
-    private processConfirmation(hideNode?: Node | null, showNode?: Node | null): void {
+    private processConfirmation(source: string, hideNode?: Node | null, showNode?: Node | null): void {
+        tracking_service.trackInteraction("confirm_difficulty", this.buildDifficultyTrackingParams({ source }), { countRaw: false });
         this.toggleNodePair(hideNode, showNode);
         this.startRuntimeFlow();
     }
@@ -210,7 +216,7 @@ export class SellCoinSlider extends Component {
     public startRuntimeFlow(): void {
         this.applyCoinValueToChef();
         this.unlockChefs();
-        this.showUpgradeButtons();
+        this.showUpgradeButtonsAfterCustomerPlacement();
         this.triggerCustomerQueues();
         this.triggerCountdowns();
     }
@@ -222,6 +228,7 @@ export class SellCoinSlider extends Component {
     private handleSliderReleased(): void {
         this.updateSliderProgress();
         this.setSliderHoldNodeActive(false);
+        tracking_service.trackInteraction("select_difficulty", this.buildDifficultyTrackingParams(), { countRaw: false });
     }
 
     private evaluateDifficultyIndex(normalized: number): number {
@@ -233,6 +240,7 @@ export class SellCoinSlider extends Component {
         this.currentCoin = this.evaluateCoinForDifficulty(this.currentDifficultyIndex);
         this.updateSliderProgress();
         this.updateLabel();
+        this.updateDifficultyNodes();
         this.applyCoinValueToChef();
     }
 
@@ -290,6 +298,36 @@ export class SellCoinSlider extends Component {
             return this.hardTextColor.clone();
         }
         return this.easyTextColor.clone();
+    }
+
+    private buildDifficultyTrackingParams(extraParams: Record<string, any> = {}): Record<string, any> {
+        return {
+            difficulty: this.getCurrentDifficultyLabel(),
+            difficulty_index: this.currentDifficultyIndex,
+            coin: this.currentCoin,
+            ...extraParams,
+        };
+    }
+
+    private updateDifficultyNodes(): void {
+        const nodes = this.getDifficultyNodes();
+        for (let index = 0; index < nodes.length; index++) {
+            const node = nodes[index];
+            if (!node || !node.isValid) {
+                continue;
+            }
+            node.active = index === this.currentDifficultyIndex;
+        }
+    }
+
+    private getDifficultyNodes(): (Node | null)[] {
+        if (this.difficultyNodes) {
+            return this.difficultyNodes;
+        }
+
+        const root = this.node.parent ?? this.node;
+        this.difficultyNodes = DIFFICULTY_LABELS.map((name) => root.getChildByName(name));
+        return this.difficultyNodes;
     }
 
     private getClosestDifficultyIndexForCoin(value: number): number {
@@ -497,6 +535,51 @@ export class SellCoinSlider extends Component {
             activator.startCountdown();
         }
         this.countdownStarted = true;
+    }
+
+    private showUpgradeButtonsAfterCustomerPlacement(): void {
+        if (this.upgradeButtonsShown || this.upgradeButtonWaitRegistered) {
+            return;
+        }
+
+        if (!this.lockCustomerQueuesUntilConfirm) {
+            this.showUpgradeButtonsOnce();
+            return;
+        }
+
+        const queues = this.collectCustomerQueues();
+        if (queues.length === 0) {
+            this.showUpgradeButtonsOnce();
+            return;
+        }
+
+        this.upgradeButtonWaitRegistered = true;
+        this.pendingInitialPlacementQueues = queues.length;
+
+        for (const queue of queues) {
+            queue.registerAfterInitialPlacement(this.handleInitialPlacementReady, this);
+        }
+    }
+
+    private handleInitialPlacementReady(): void {
+        if (this.pendingInitialPlacementQueues > 0) {
+            this.pendingInitialPlacementQueues--;
+        }
+
+        if (this.pendingInitialPlacementQueues <= 0) {
+            this.showUpgradeButtonsOnce();
+        }
+    }
+
+    private showUpgradeButtonsOnce(): void {
+        if (this.upgradeButtonsShown) {
+            return;
+        }
+
+        this.upgradeButtonsShown = true;
+        this.upgradeButtonWaitRegistered = false;
+        this.pendingInitialPlacementQueues = 0;
+        this.showUpgradeButtons();
     }
 
     private showUpgradeButtons(): void {

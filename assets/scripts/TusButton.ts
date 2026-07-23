@@ -11,20 +11,35 @@ import {
     AudioClip,
     Prefab,
     Animation,
-    UIOpacity
+    UIOpacity,
+    Label,
+    UITransform,
+    Color,
+    Camera,
+    Canvas,
+    Layers
 } from 'cc';
 import { zoom_button } from "db://assets/scripts/zoom_button";
 import { ChefBehavior } from "./ChefBehavior";
 import super_html_script from "db://assets/plugins/playable-foundation/super-html/super_html_script";
 import {CurrencyView} from "db://assets/scripts/CurrencyView";
+import { tracking_service } from "db://assets/plugins/playable-foundation/tracking/tracking_service";
 import {object_pool_manager} from "db://assets/plugins/playable-foundation/game-foundation/object_pool";
 import {super_html_playable} from "db://assets/plugins/playable-foundation/super-html/super_html_playable";
 
 const { ccclass, property } = _decorator;
 
+type HandButtonTarget = {
+    handNode: Node;
+    buttonNode: Node;
+    isSpeedButton: boolean;
+};
+
 @ccclass('TusButton')
 export class TusButton extends Component {
     private static readonly DEFAULT_SPEED_EFFECT_DURATION = 0.6;
+    private static readonly SPEED_TEXT_NODE_NAME = 'SpeedBoostText';
+    private static readonly SPEED_BOOST_PERCENT = 0.05;
 
     @property(Button)
     public buttonSpeed: Button = null!;
@@ -100,10 +115,13 @@ export class TusButton extends Component {
     @property({ tooltip: 'Số lần click cần thiết' })
     public countMax: number = 8;
 
+    @property({ tooltip: 'So lan speed boost toi da moi Chef co the nhan.' })
+    public maxSpeedBoostClicksPerChef: number = 40;
+
     private _count: number = 0;
 
     @property({ tooltip: 'Số lần click cần thiết worker' })
-    public countWorkerMax: number = 3;
+    public countWorkerMax: number = 1;
 
     private readonly speedCostAmount: number = 5;
     private readonly workerCostAmount: number = 15;
@@ -121,8 +139,16 @@ export class TusButton extends Component {
     private readonly buttonWorkerInitialScale = new Vec3();
     private buttonsRegistered: boolean = false;
     private runtimeFlowStarted: boolean = false;
+    private currentHandTargetIsSpeed: boolean | null = null;
     private speedClickCount: number = 0;
     private workerClickCount: number = 0;
+    private readonly speedBoostCountsByChef = new Map<string, number>();
+    private readonly speedTextWorldPos = new Vec3();
+    private readonly speedTextScreenPos = new Vec3();
+    private readonly speedTextUIWorldPos = new Vec3();
+    private cachedCanvas: Canvas | null = null;
+    private cachedWorldCamera: Camera | null = null;
+    private cachedUICamera: Camera | null = null;
 
     /* ================= LIFE ================= */
 
@@ -142,13 +168,14 @@ export class TusButton extends Component {
         this.setSpriteAlpha(this.zoom_button1.node, 255);
         this.setSpriteAlpha(this.zoom_button2.node, 255);
 
-        if (this.hand && this.handTarget2) {
-            this.hand.setPosition(this.handTarget2.position);
+        if (this.hand && this.handTarget) {
+            this.hand.setPosition(this.handTarget.position);
         }
 
         this.workerClicked = false;
         this.speedClickCount = 0;
         this.workerClickCount = 0;
+        this.speedBoostCountsByChef.clear();
         this.isCompleted = false;
         this.setChefSpeedNodesActive(false);
         if (this.end) {
@@ -180,24 +207,37 @@ export class TusButton extends Component {
         this.startHandLoop();
     }
 
+    public hasReachedSpeedStoreGate(): boolean {
+        return this.speedClickCount >= this.getRequiredSpeedClickCount();
+    }
+
     /* ================= CLICK ================= */
 
     public ButtonSpeedClicker (): void {
-        if(this.isCompleted) return;
-
-        if (this.speedClickCount >= this.getRequiredSpeedClickCount()) {
-            this.refreshButtonAvailability();
-            this.hideHandTemporarily();
+        if (!this.runtimeFlowStarted) {
             return;
         }
 
-        if(!CurrencyView.instance.trySubtractCurrency(this.speedCostAmount)) return;
+        const canApplySpeedBoost = this.canApplySpeedBoostToAnyTarget();
+        if (canApplySpeedBoost && !CurrencyView.instance.trySubtractCurrency(this.speedCostAmount)) {
+            return;
+        }
+
+        if (canApplySpeedBoost) {
+            tracking_service.trackInteraction("speed_button", {
+                click_count: this.speedClickCount + 1,
+                required_click_count: this.getRequiredSpeedClickCount(),
+                cost: this.speedCostAmount,
+            }, { countRaw: false });
+        }
 
         this.playClickSound();
         object_pool_manager.instance.Spawn(this.flash, new Vec3(0,0,0), null, this.flashParent);
 
         this._count++;
-        this.speedClickCount++;
+        if (canApplySpeedBoost && this.speedClickCount < this.getRequiredSpeedClickCount()) {
+            this.speedClickCount++;
+        }
         this.applySpeedBoost(this.chefBehavior, 0);
         this.applySpeedBoost(this.chefWorkerBehavior, 1);
         this.refreshButtonAvailability();
@@ -220,6 +260,12 @@ export class TusButton extends Component {
         }
 
         if(!CurrencyView.instance.trySubtractCurrency(this.workerCostAmount)) return;
+
+        tracking_service.trackInteraction("worker_button", {
+            click_count: this.workerClickCount + 1,
+            required_click_count: this.getRequiredWorkerClickCount(),
+            cost: this.workerCostAmount,
+        }, { countRaw: false });
 
         this.playClickSound();
 
@@ -255,11 +301,11 @@ export class TusButton extends Component {
             return;
         }
 
-        if (this.speedClickCount < this.getRequiredSpeedClickCount()) {
+        if (this.workerClickCount < this.getRequiredWorkerClickCount()) {
             return;
         }
 
-        if (this.workerClickCount < this.getRequiredWorkerClickCount()) {
+        if (this.canApplySpeedBoostToAnyTarget()) {
             return;
         }
 
@@ -268,13 +314,16 @@ export class TusButton extends Component {
 
     private completeUpgradeFlow(): void {
         this.isCompleted = true;
+        tracking_service.trackInteraction("upgrade_complete", {
+            speed_click_count: this.speedClickCount,
+            worker_click_count: this.workerClickCount,
+        }, { countRaw: false });
         this.stopHandLoop();
         this.unschedule(this.restoreHandVisibility);
         if (this.hand) {
             this.hand.active = false;
         }
 
-        this.setUpgradeButtonsVisible(false);
         this.refreshButtonAvailability();
 
         if (this.end) {
@@ -292,12 +341,15 @@ export class TusButton extends Component {
         this.audioSource.playOneShot(this.clickSound, 1);
     }
 
-    private applySpeedBoost (target: ChefBehavior | null, effectIndex: number): void {
-        if (!target) {
+    private applySpeedBoost(target: ChefBehavior | null, effectIndex: number): void {
+        if (!this.isValidSpeedBoostTarget(target)) {
             return;
         }
 
-        target.applySpeedBoost(0.10);
+        if (target && this.canApplySpeedBoostToTarget(target)) {
+            target.applySpeedBoost(TusButton.SPEED_BOOST_PERCENT);
+            this.incrementSpeedBoostCount(target);
+        }
         this.playChefSpeedEffect(effectIndex);
     }
 
@@ -326,6 +378,7 @@ export class TusButton extends Component {
         const token = (this.speedEffectPlayTokens[effectIndex] ?? 0) + 1;
         this.speedEffectPlayTokens[effectIndex] = token;
         node.active = true;
+        this.playSpeedBoostText(node, effectIndex);
 
         const animation = node.getComponent(Animation) ?? node.getComponentInChildren(Animation);
         let hideDelay = TusButton.DEFAULT_SPEED_EFFECT_DURATION;
@@ -353,27 +406,28 @@ export class TusButton extends Component {
     }
 
     private startHandLoop(): void {
-        if (!this.hand || !this.handTarget || !this.handTarget2 || !this.handInitiallyActive) {
+        if (!this.hand || !this.handInitiallyActive) {
+            return;
+        }
+
+        const target = this.getAvailableHandTarget();
+        if (!target) {
+            this.stopHandLoop();
+            this.hand.active = false;
             return;
         }
 
         this.stopHandLoop();
         this.hand.active = true;
-
-        const button1Position = this.handTarget2.position.clone();
-        const button2Position = this.handTarget.position.clone();
-        this.hand.setPosition(button1Position);
-        this.playHandButtonBounce(this.buttonSpeed?.node ?? null, true);
+        this.currentHandTargetIsSpeed = target.isSpeedButton;
+        this.hand.setPosition(target.handNode.position);
+        this.playHandButtonBounce(target.buttonNode, target.isSpeedButton);
 
         this.handLoopTween = tween(this.hand)
             .repeatForever(
                 tween<Node>()
-                    .delay(Math.max(0, this.handPauseDuration))
-                    .to(Math.max(0.01, this.handMoveDuration), { position: button2Position.clone() }, { easing: 'sineInOut' })
-                    .call(() => this.playHandButtonBounce(this.buttonWorker?.node ?? null, false))
-                    .delay(Math.max(0, this.handPauseDuration))
-                    .to(Math.max(0.01, this.handMoveDuration), { position: button1Position.clone() }, { easing: 'sineInOut' })
-                    .call(() => this.playHandButtonBounce(this.buttonSpeed?.node ?? null, true))
+                    .delay(Math.max(0.01, this.handPauseDuration + this.handMoveDuration))
+                    .call(() => this.refreshCurrentHandTarget())
             )
             .start();
     }
@@ -386,6 +440,60 @@ export class TusButton extends Component {
 
         this.stopHandButtonBounce(this.buttonSpeed?.node ?? null, true, resetButtons);
         this.stopHandButtonBounce(this.buttonWorker?.node ?? null, false, resetButtons);
+        this.currentHandTargetIsSpeed = null;
+    }
+
+    private refreshCurrentHandTarget(): void {
+        if (!this.hand) {
+            return;
+        }
+
+        const target = this.getAvailableHandTarget();
+        if (!target) {
+            this.stopHandLoop();
+            this.hand.active = false;
+            return;
+        }
+
+        if (target.isSpeedButton !== this.currentHandTargetIsSpeed) {
+            this.startHandLoop();
+            return;
+        }
+
+        this.hand.setPosition(target.handNode.position);
+        this.playHandButtonBounce(target.buttonNode, target.isSpeedButton);
+    }
+
+    private syncHandTargetWithAvailability(): void {
+        if (!this.runtimeFlowStarted || this.isCompleted || !this.hand || !this.handInitiallyActive) {
+            return;
+        }
+
+        if (!this.hand.active && !this.handLoopTween) {
+            return;
+        }
+
+        this.startHandLoop();
+    }
+
+    private getAvailableHandTarget(): HandButtonTarget | null {
+        if (this.canHighlightWorkerButton() && this.handTarget && this.buttonWorker?.node) {
+            return {
+                handNode: this.handTarget,
+                buttonNode: this.buttonWorker.node,
+                isSpeedButton: false,
+            };
+        }
+
+        if (this.canHighlightSpeedButton() && this.handTarget2 && this.buttonSpeed?.node) {
+            return {
+                handNode: this.handTarget2,
+                buttonNode: this.buttonSpeed.node,
+                isSpeedButton: true,
+            };
+        }
+
+        return null;
     }
 
     private playHandButtonBounce(buttonNode: Node | null, isSpeedButton: boolean): void {
@@ -444,26 +552,10 @@ export class TusButton extends Component {
     }
 
     private refreshButtonAvailability () {
-        this.applyButtonState(this.buttonSpeed, this.canUseSpeedButton(), this.canReceiveUpgradeButtonClick());
-        this.applyButtonState(this.buttonWorker, this.canUseWorkerButton(), this.canReceiveUpgradeButtonClick());
-    }
-
-    private canUseSpeedButton(): boolean {
-        const currency = CurrencyView.instance;
-        return !this.isCompleted &&
-            this.runtimeFlowStarted &&
-            this.speedClickCount < this.getRequiredSpeedClickCount() &&
-            !!currency &&
-            currency.canAfford(this.speedCostAmount);
-    }
-
-    private canUseWorkerButton(): boolean {
-        const currency = CurrencyView.instance;
-        return !this.isCompleted &&
-            this.runtimeFlowStarted &&
-            this.workerClickCount < this.getRequiredWorkerClickCount() &&
-            !!currency &&
-            currency.canAfford(this.workerCostAmount);
+        const canReceiveClick = this.canReceiveUpgradeButtonClick();
+        this.applyButtonState(this.buttonSpeed, canReceiveClick, canReceiveClick);
+        this.applyButtonState(this.buttonWorker, canReceiveClick && this.canHighlightWorkerButton(), canReceiveClick);
+        this.syncHandTargetWithAvailability();
     }
 
     private getRequiredSpeedClickCount(): number {
@@ -475,7 +567,48 @@ export class TusButton extends Component {
     }
 
     private canReceiveUpgradeButtonClick(): boolean {
-        return this.runtimeFlowStarted && !this.isCompleted;
+        return this.runtimeFlowStarted;
+    }
+
+    private canHighlightSpeedButton(): boolean {
+        return this.runtimeFlowStarted && !this.isCompleted && this.canApplySpeedBoostToAnyTarget();
+    }
+
+    private canHighlightWorkerButton(): boolean {
+        return this.runtimeFlowStarted && !this.isCompleted && this.workerClickCount < this.getRequiredWorkerClickCount();
+    }
+
+    private canApplySpeedBoostToAnyTarget(): boolean {
+        return this.canApplySpeedBoostToTarget(this.chefBehavior) || this.canApplySpeedBoostToTarget(this.chefWorkerBehavior);
+    }
+
+    private canApplySpeedBoostToTarget(target: ChefBehavior | null): boolean {
+        if (!this.isValidSpeedBoostTarget(target)) {
+            return false;
+        }
+
+        return this.getSpeedBoostCount(target) < this.getMaxSpeedBoostClicksPerChef();
+    }
+
+    private isValidSpeedBoostTarget(target: ChefBehavior | null): target is ChefBehavior {
+        return !!target && !!target.node && target.node.activeInHierarchy;
+    }
+
+    private getMaxSpeedBoostClicksPerChef(): number {
+        return Math.max(0, Math.floor(this.maxSpeedBoostClicksPerChef));
+    }
+
+    private getSpeedBoostCount(target: ChefBehavior): number {
+        return this.speedBoostCountsByChef.get(this.getChefSpeedBoostKey(target)) ?? 0;
+    }
+
+    private incrementSpeedBoostCount(target: ChefBehavior): void {
+        const key = this.getChefSpeedBoostKey(target);
+        this.speedBoostCountsByChef.set(key, this.getSpeedBoostCount(target) + 1);
+    }
+
+    private getChefSpeedBoostKey(target: ChefBehavior): string {
+        return target.node?.uuid ?? `${target}`;
     }
 
     private applyButtonState (btn: Button, visuallyActive: boolean, interactable: boolean) {
@@ -487,6 +620,197 @@ export class TusButton extends Component {
     private setNodeOpacity(node: Node, alpha: number): void {
         const opacity = node.getComponent(UIOpacity) ?? node.addComponent(UIOpacity);
         opacity.opacity = Math.max(0, Math.min(255, Math.round(alpha)));
+    }
+
+    private playSpeedBoostText(target: Node, effectIndex: number): void {
+        const textNode = this.getOrCreateSpeedBoostText(effectIndex);
+        if (!this.positionSpeedBoostText(textNode, target)) {
+            return;
+        }
+
+        const opacity = textNode.getComponent(UIOpacity) ?? textNode.addComponent(UIOpacity);
+
+        Tween.stopAllByTarget(textNode);
+        Tween.stopAllByTarget(opacity);
+
+        textNode.active = true;
+        textNode.setScale(1, 1, 1);
+        opacity.opacity = 255;
+
+        const startPos = textNode.position.clone();
+        const endPos = new Vec3(startPos.x, startPos.y + 70, startPos.z);
+        tween(textNode)
+            .to(0.12, { scale: new Vec3(1.15, 1.15, 1.15) }, { easing: 'backOut' })
+            .parallel(
+                tween<Node>().to(0.55, { position: endPos }, { easing: 'quadOut' }),
+                tween<Node>().delay(0.22).to(0.33, { scale: new Vec3(1, 1, 1) }, { easing: 'quadIn' })
+            )
+            .start();
+
+        tween(opacity)
+            .delay(0.25)
+            .to(0.3, { opacity: 0 }, { easing: 'quadIn' })
+            .call(() => {
+                textNode.active = false;
+            })
+            .start();
+    }
+
+    private getOrCreateSpeedBoostText(effectIndex: number): Node {
+        const uiParent = this.getSpeedBoostUIParent();
+        const nodeName = `${TusButton.SPEED_TEXT_NODE_NAME}-${effectIndex}`;
+        let textNode = uiParent.getChildByName(nodeName);
+        if (!textNode) {
+            textNode = new Node(nodeName);
+            textNode.layer = Layers.Enum.UI_2D;
+            uiParent.addChild(textNode);
+            textNode.addComponent(UITransform).setContentSize(110, 30);
+
+            const label = textNode.addComponent(Label);
+            label.string = 'Speed++';
+            label.fontSize = 21;
+            label.lineHeight = 23;
+            label.color = new Color(255, 245, 64, 255);
+            label.isBold = true;
+            label.horizontalAlign = Label.HorizontalAlign.CENTER;
+            label.verticalAlign = Label.VerticalAlign.CENTER;
+            this.applySpeedBoostTextFont(label);
+            this.applySpeedBoostTextOutline(label);
+        } else {
+            const label = textNode.getComponent(Label);
+            if (label) {
+                label.string = 'Speed++';
+                label.fontSize = 21;
+                label.lineHeight = 23;
+                this.applySpeedBoostTextFont(label);
+                this.applySpeedBoostTextOutline(label);
+            }
+        }
+
+        return textNode;
+    }
+
+    private applySpeedBoostTextFont(label: Label): void {
+        const sourceLabel =
+            this.buttonSpeed?.node.getComponentInChildren(Label) ??
+            this.buttonWorker?.node.getComponentInChildren(Label) ??
+            null;
+
+        if (sourceLabel?.font) {
+            label.font = sourceLabel.font;
+            (label as unknown as { isSystemFontUsed?: boolean }).isSystemFontUsed = false;
+        }
+    }
+
+    private applySpeedBoostTextOutline(label: Label): void {
+        const outlineLabel = label as unknown as {
+            enableOutline?: boolean;
+            outlineColor?: Color;
+            outlineWidth?: number;
+        };
+
+        outlineLabel.enableOutline = true;
+        outlineLabel.outlineColor = new Color(0, 0, 0, 255);
+        outlineLabel.outlineWidth = 2;
+    }
+
+    private positionSpeedBoostText(textNode: Node, target: Node): boolean {
+        const worldCamera = this.resolveWorldCamera();
+        const uiCamera = this.resolveUICamera();
+        if (!worldCamera || !uiCamera) {
+            return false;
+        }
+
+        target.getWorldPosition(this.speedTextWorldPos);
+        this.speedTextWorldPos.y += 1.15;
+        worldCamera.worldToScreen(this.speedTextWorldPos, this.speedTextScreenPos);
+        if (this.speedTextScreenPos.z <= 0) {
+            textNode.active = false;
+            return false;
+        }
+
+        uiCamera.screenToWorld(this.speedTextScreenPos, this.speedTextUIWorldPos);
+        textNode.setWorldPosition(this.speedTextUIWorldPos);
+        return true;
+    }
+
+    private getSpeedBoostUIParent(): Node {
+        const canvas = this.getCanvas();
+        return canvas?.node ?? this.node;
+    }
+
+    private resolveWorldCamera(): Camera | null {
+        if (this.cachedWorldCamera && this.cachedWorldCamera.node && this.cachedWorldCamera.node.isValid) {
+            return this.cachedWorldCamera;
+        }
+
+        const scene = this.node.scene;
+        if (!scene) {
+            return null;
+        }
+
+        const uiCam = this.resolveUICamera();
+        const cameras = scene.getComponentsInChildren(Camera);
+        for (const cam of cameras) {
+            if (!cam.enabled || !cam.node.activeInHierarchy) {
+                continue;
+            }
+            if (cam === uiCam) {
+                continue;
+            }
+            if ((cam.visibility & Layers.BitMask.UI_2D) !== 0) {
+                continue;
+            }
+            this.cachedWorldCamera = cam;
+            return cam;
+        }
+
+        return null;
+    }
+
+    private resolveUICamera(): Camera | null {
+        if (this.cachedUICamera && this.cachedUICamera.node && this.cachedUICamera.node.isValid) {
+            return this.cachedUICamera;
+        }
+
+        const canvas = this.getCanvas();
+        if (canvas && canvas.cameraComponent) {
+            this.cachedUICamera = canvas.cameraComponent;
+            return canvas.cameraComponent;
+        }
+
+        const scene = this.node.scene;
+        if (!scene) {
+            return null;
+        }
+
+        const cameras = scene.getComponentsInChildren(Camera);
+        for (const cam of cameras) {
+            if (!cam.enabled || !cam.node.activeInHierarchy) {
+                continue;
+            }
+            if ((cam.visibility & Layers.BitMask.UI_2D) !== 0) {
+                this.cachedUICamera = cam;
+                return cam;
+            }
+        }
+
+        return null;
+    }
+
+    private getCanvas(): Canvas | null {
+        if (this.cachedCanvas && this.cachedCanvas.isValid) {
+            return this.cachedCanvas;
+        }
+
+        const scene = this.node.scene;
+        if (!scene) {
+            return null;
+        }
+
+        const canvas = scene.getComponentInChildren(Canvas);
+        this.cachedCanvas = canvas ?? null;
+        return this.cachedCanvas;
     }
 
     private setUpgradeButtonsVisible(visible: boolean): void {

@@ -1,10 +1,12 @@
-import { _decorator, Component, Label, Node, Color, UIOpacity, tween, Tween, Animation, SpriteFrame, Button } from 'cc';
+import { _decorator, Component, Label, Node, Color, UIOpacity, tween, Tween, Animation, SpriteFrame, Button, input, Input, director } from 'cc';
 import { OrderPopup } from 'db://assets/scripts/OrderPopup';
 import super_html_script from 'db://assets/plugins/playable-foundation/super-html/super_html_script';
 const { ccclass, property } = _decorator;
 
 @ccclass('CountdownActivator')
 export class CountdownActivator extends Component {
+    private static lastStoreTriggerFrame = -1;
+
     @property({ tooltip: 'Thời gian đếm ngược (giây).' })
     public countdownSeconds = 30;
 
@@ -41,6 +43,9 @@ export class CountdownActivator extends Component {
     @property(Button)
     public countdownButton2: Button | null = null;
 
+    @property({ tooltip: 'Deprecated: sau khi countdown xong, click o bat ky dau cung trigger store.' })
+    public requireSpeedGateForStore = true;
+
     private remainingTime = 0;
     private isRunning = false;
     private defaultLabelColor: Color | null = null;
@@ -52,9 +57,12 @@ export class CountdownActivator extends Component {
     private popupOverrideQueue: OrderPopup[] = [];
     private currentPopupOverrideIndex = 0;
     private isCountdownFinished = false;
+    private globalTouchRegistered = false;
+    private readonly storeButtonTouchNodes: Node[] = [];
 
     protected onEnable(): void {
-        this.bindCountdownButtons();
+        this.bindGlobalStoreTouch();
+        this.bindStoreButtonTouches();
         this.isCountdownFinished = false;
 
         if (this.autoStart) {
@@ -70,7 +78,8 @@ export class CountdownActivator extends Component {
     }
 
     protected onDisable(): void {
-        this.unbindCountdownButtons();
+        this.unbindGlobalStoreTouch();
+        this.unbindStoreButtonTouches();
         this.stopCountdown();
         this.isCountdownFinished = false;
         this.setCountdownTargetsActive(false);
@@ -130,6 +139,7 @@ export class CountdownActivator extends Component {
         this.updateLabel();
         this.setUrgentState(false);
         this.setCountdownTargetsActive(true);
+        this.bindStoreButtonTouches();
         this.playCompletionAnimations();
         // this.node.active = false;
     }
@@ -259,23 +269,87 @@ export class CountdownActivator extends Component {
         }
     }
 
-    private bindCountdownButtons(): void {
-        this.countdownButton1?.node.on(Button.EventType.CLICK, this.onCountdownButtonClick, this);
-        this.countdownButton2?.node.on(Button.EventType.CLICK, this.onCountdownButtonClick, this);
-    }
-
-    private unbindCountdownButtons(): void {
-        this.countdownButton1?.node.off(Button.EventType.CLICK, this.onCountdownButtonClick, this);
-        this.countdownButton2?.node.off(Button.EventType.CLICK, this.onCountdownButtonClick, this);
-    }
-
-    private onCountdownButtonClick(): void {
-        if (!this.isCountdownFinished) {
+    private bindGlobalStoreTouch(): void {
+        if (this.globalTouchRegistered) {
             return;
         }
 
-        super_html_script.on_click_game_end();
-        super_html_script.on_click_download();
+        input.on(Input.EventType.TOUCH_START, this.onGlobalStoreTouch, this);
+        input.on(Input.EventType.MOUSE_DOWN, this.onGlobalStoreTouch, this);
+        this.globalTouchRegistered = true;
+    }
+
+    private unbindGlobalStoreTouch(): void {
+        if (!this.globalTouchRegistered) {
+            return;
+        }
+
+        input.off(Input.EventType.TOUCH_START, this.onGlobalStoreTouch, this);
+        input.off(Input.EventType.MOUSE_DOWN, this.onGlobalStoreTouch, this);
+        this.globalTouchRegistered = false;
+    }
+
+    private onGlobalStoreTouch(): void {
+        this.tryTriggerStore();
+    }
+
+    private bindStoreButtonTouches(): void {
+        const scene = this.node.scene;
+        if (!scene) {
+            return;
+        }
+
+        this.bindStoreButtonTouchesRecursive(scene);
+    }
+
+    private bindStoreButtonTouchesRecursive(node: Node): void {
+        if (node.getComponent(Button)) {
+            this.bindStoreButtonTouch(node);
+        }
+
+        for (const child of node.children) {
+            this.bindStoreButtonTouchesRecursive(child);
+        }
+    }
+
+    private bindStoreButtonTouch(node: Node): void {
+        if (this.storeButtonTouchNodes.includes(node)) {
+            return;
+        }
+
+        node.on(Node.EventType.TOUCH_START, this.onStoreButtonTouch, this);
+        this.storeButtonTouchNodes.push(node);
+    }
+
+    private unbindStoreButtonTouches(): void {
+        for (const node of this.storeButtonTouchNodes) {
+            if (!node || !node.isValid) {
+                continue;
+            }
+
+            node.off(Node.EventType.TOUCH_START, this.onStoreButtonTouch, this);
+        }
+
+        this.storeButtonTouchNodes.length = 0;
+    }
+
+    private onStoreButtonTouch(): void {
+        this.tryTriggerStore();
+    }
+
+    public tryTriggerStore(): boolean {
+        if (!this.isCountdownFinished) {
+            return false;
+        }
+
+        const currentFrame = director.getTotalFrames();
+        if (CountdownActivator.lastStoreTriggerFrame === currentFrame) {
+            return false;
+        }
+
+        CountdownActivator.lastStoreTriggerFrame = currentFrame;
+        super_html_script.on_click_download("timeout_click");
+        return true;
     }
 
     private updateOrderPopupCountdown(secondsLeft: number): void {
