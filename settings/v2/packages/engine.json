@@ -211,6 +211,7 @@
         }
       },
       "defaultConfig": {
+        "name": "DEFAULT CONFIG",
         "cache": {
           "base": {
             "_value": true
@@ -357,7 +358,7 @@
           },
           "spine": {
             "_value": true,
-            "_option": "spine-3.8"
+            "_option": "spine-4.2"
           },
           "spine-3.8": {
             "_value": true,
@@ -397,6 +398,10 @@
             "_value": false
           }
         },
+        "flags": {
+          "LOAD_SPINE_MANUALLY": false,
+          "LOAD_BULLET_MANUALLY": false
+        },
         "includeModules": [
           "2d",
           "3d",
@@ -421,7 +426,7 @@
           "profiler",
           "rich-text",
           "skeletal-animation",
-          "spine-3.8",
+          "spine-4.2",
           "terrain",
           "tiled-map",
           "tween",
@@ -430,7 +435,11 @@
           "video",
           "websocket",
           "webview"
-        ]
+        ],
+        "noDeprecatedFeatures": {
+          "value": false,
+          "version": ""
+        }
       }
     },
     "globalConfigKey": "defaultConfig"

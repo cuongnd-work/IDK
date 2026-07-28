@@ -15,7 +15,7 @@
 
     static TRACKING = {
         PROJECT_ID: "com.archer.idle.dungeon.keeper.tycoon.rpg",
-        PLAYABLE_ID: "PA00010",
+        PLAYABLE_ID: "PA00012",
         MAX_TRACKING_DURATION_SEC: 60,
         PACKAGE_NAME: "com.archer.idle.dungeon.keeper.tycoon.rpg",
         ENV: "production"
