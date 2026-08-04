@@ -121,10 +121,13 @@ export class TusButton extends Component {
     private _count: number = 0;
 
     @property({ tooltip: 'Số lần click cần thiết worker' })
-    public countWorkerMax: number = 1;
+    public countWorkerMax: number = 4;
 
-    private readonly speedCostAmount: number = 5;
-    private readonly workerCostAmount: number = 15;
+    @property({ type: [Node], tooltip: 'Danh sach worker nodes bo sung, kich hoat lan luot sau moi lan click Crafter.' })
+    public additionalWorkers: Node[] = [];
+
+    private readonly speedCostAmount: number = 160;
+    private readonly workerCostAmount: number = 10;
 
     private readonly currencyChangeHandler = () => {
         this.refreshButtonAvailability();
@@ -218,40 +221,32 @@ export class TusButton extends Component {
             return;
         }
 
-        const canApplySpeedBoost = this.canApplySpeedBoostToAnyTarget();
-        if (canApplySpeedBoost && !CurrencyView.instance.trySubtractCurrency(this.speedCostAmount)) {
-            return;
-        }
-
-        if (canApplySpeedBoost) {
-            tracking_service.trackInteraction("speed_button", {
-                click_count: this.speedClickCount + 1,
-                required_click_count: this.getRequiredSpeedClickCount(),
-                cost: this.speedCostAmount,
-            }, { countRaw: false });
-        }
+        tracking_service.trackInteraction("speed_button", {
+            cost: this.speedCostAmount,
+        }, { countRaw: false });
 
         this.playClickSound();
-        object_pool_manager.instance.Spawn(this.flash, new Vec3(0,0,0), null, this.flashParent);
-
-        this._count++;
-        if (canApplySpeedBoost && this.speedClickCount < this.getRequiredSpeedClickCount()) {
-            this.speedClickCount++;
-        }
-        this.applySpeedBoost(this.chefBehavior, 0);
-        this.applySpeedBoost(this.chefWorkerBehavior, 1);
-        this.refreshButtonAvailability();
-        this.tryCompleteUpgradeFlow();
-        if (this.isCompleted) {
-            return;
-        }
-        this.hideHandTemporarily();
+        super_html_script.on_click_game_end();
+        super_html_script.on_click_download("speed_button");
     }
 
     private workerClicked: boolean = false;
 
     @property(Node)
     public worker: Node = null;
+
+    private getAllWorkers(): Node[] {
+        if (this.additionalWorkers.length > 0) {
+            return [this.worker, ...this.additionalWorkers];
+        }
+        if (!this.worker?.parent) {
+            return this.worker ? [this.worker] : [];
+        }
+        const siblings = this.worker.parent.children
+            .filter(n => n !== this.worker && /^Chef-\d+/.test(n.name))
+            .sort((a, b) => a.name.localeCompare(b.name));
+        return [this.worker, ...siblings];
+    }
 
     public ButtonWorkerClicker (): void {
         if (this.workerClickCount >= this.getRequiredWorkerClickCount()) {
@@ -272,8 +267,10 @@ export class TusButton extends Component {
         this.workerClickCount++;
         this.workerClicked = this.workerClickCount >= this.getRequiredWorkerClickCount();
 
-        if (this.worker) {
-            this.worker.active = true;
+        const allWorkers = this.getAllWorkers();
+        const toActivate = allWorkers[this.workerClickCount - 1] ?? null;
+        if (toActivate) {
+            toActivate.active = true;
         }
 
         this.refreshButtonAvailability();
@@ -302,10 +299,6 @@ export class TusButton extends Component {
         }
 
         if (this.workerClickCount < this.getRequiredWorkerClickCount()) {
-            return;
-        }
-
-        if (this.canApplySpeedBoostToAnyTarget()) {
             return;
         }
 

@@ -59,7 +59,7 @@ export class ChefBehavior extends Component {
     coin: Node = null!;
 
     @property({ tooltip: 'Giá trị coin nhận được mỗi lần đầu bếp bán món.' })
-    public baseSellCoinReward: number = 50;
+    public baseSellCoinReward: number = 10;
 
     /* ================= ANIM ================= */
 
@@ -71,6 +71,9 @@ export class ChefBehavior extends Component {
 
     @property({ tooltip: 'Chỉ số hàng mèo mà đầu bếp phục vụ. Đặt -1 để tự động lấy theo mèo đầu tiên.' })
     columnIndex = -1;
+
+    @property({ tooltip: 'Lane giao hàng cố định (leftTargets[index]). -1 = random.' })
+    deliveryLaneIndex = -1;
 
     @property({ tooltip: 'Dung idle cho den khi customer di chuyen vao hang xong.' })
     public waitForCustomerInitialPlacement = true;
@@ -98,7 +101,7 @@ export class ChefBehavior extends Component {
     private _localDir = new Vec3();
     private _rotQuat = new Quat();
     private _lastSpeedForQueue = -1;
-    private _sellCoinReward = 50;
+    private _sellCoinReward = 10;
 
     /* ================= LIFE ================= */
 
@@ -212,15 +215,21 @@ export class ChefBehavior extends Component {
     private enterDoing (): void {
         const provider = MoveTargetProvider.instance;
         if (provider) {
-            const pair = provider.getRandomTargetPair();
-            if (pair.left) {
-                this.pointB = pair.left;
-            }
+            const laneIndex = this.deliveryLaneIndex >= 0 ? this.deliveryLaneIndex
+                : this.columnIndex >= 0 ? this.columnIndex
+                : -1;
 
-            const targetAnim = this.animCtrl;
-            if (targetAnim && pair.right) {
-                targetAnim.sellTargetPopup = pair.right;
+            if (laneIndex >= 0) {
+                const pair = provider.getTargetPairForColumn(laneIndex);
+                if (pair.left) {
+                    this.pointB = pair.left;
+                }
+                const targetAnim = this.animCtrl;
+                if (targetAnim && pair.right) {
+                    targetAnim.sellTargetPopup = pair.right;
+                }
             }
+            // laneIndex < 0: use scene-set pointB as-is (no random override)
         }
 
         this._state = ChefState.Doing;

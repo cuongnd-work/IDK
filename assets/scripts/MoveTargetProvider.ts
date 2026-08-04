@@ -76,4 +76,21 @@ export class MoveTargetProvider extends Component {
             right: this.rightTargets[index] ?? null,
         };
     }
+
+    /**
+     * Lấy cặp target theo columnIndex cố định (không random, tránh phục vụ chéo).
+     */
+    public getTargetPairForColumn (columnIndex: number): { left: Node | null; right: OrderPopup | null } {
+        const len = Math.min(this.leftTargets.length, this.rightTargets.length);
+        if (len === 0 || columnIndex < 0) {
+            return { left: null, right: null };
+        }
+
+        const index = columnIndex % len;
+
+        return {
+            left: this.leftTargets[index] ?? null,
+            right: this.rightTargets[index] ?? null,
+        };
+    }
 }

@@ -26,10 +26,10 @@ export class SellCoinSlider extends Component {
     public coinLabels: Label[] = [];
 
     @property({ tooltip: 'Gia tri coin nho nhat khi ban.' })
-    public minCoin: number = 50;
+    public minCoin: number = 10;
 
     @property({ tooltip: 'Gia tri coin lon nhat khi ban.' })
-    public maxCoin: number = 999;
+    public maxCoin: number = 10;
 
     @property({ tooltip: 'Difficulty mac dinh: 0 Easy, 1 Medium, 2 Hard.' })
     public defaultDifficultyIndex: number = 0;
@@ -547,7 +547,7 @@ export class SellCoinSlider extends Component {
             return;
         }
 
-        const queues = this.collectCustomerQueues();
+        const queues = this.collectCustomerQueues().filter(q => q.node.activeInHierarchy);
         if (queues.length === 0) {
             this.showUpgradeButtonsOnce();
             return;
